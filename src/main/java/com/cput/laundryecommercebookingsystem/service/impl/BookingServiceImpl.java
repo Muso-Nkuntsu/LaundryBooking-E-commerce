@@ -40,6 +40,12 @@ public class BookingServiceImpl implements IBookingService {
                 student,laundryMachine,timeSlot,laundryService,totalAmount);
         return bookingRepository.save(booking);
     }
+
+    @Override
+    public Booking cancelBooking(Long bookingId) {
+        return null;
+    }
+
     @Override
     @Transactional
     public Booking updateStatus(Long bookingId, BookingStatus status){
@@ -49,6 +55,11 @@ public class BookingServiceImpl implements IBookingService {
         Booking booking = getBookingOrThrow(bookingId);
         booking.updateStatus(status);
         return bookingRepository.save(booking);
+    }
+
+    @Override
+    public Booking deleteBooking(Long bookingId) {
+        return null;
     }
 
     @Override

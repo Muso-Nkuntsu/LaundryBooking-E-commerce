@@ -6,7 +6,7 @@ import com.cput.laundryecommercebookingsystem.domain.Student;
 import com.cput.laundryecommercebookingsystem.factory.ReviewFactory;
 import com.cput.laundryecommercebookingsystem.repository.IReviewRepository;
 import com.cput.laundryecommercebookingsystem.repository.ILaundryServiceRepository;
-import com.cput.laundryecommercebookingsystem.repository.StudentRepository;
+import com.cput.laundryecommercebookingsystem.repository.IStudentRepository;
 import com.cput.laundryecommercebookingsystem.service.IReviewService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +18,6 @@ import java.util.Optional;
 
 /**
  * ReviewServiceImpl.java
- *
  * Lindokuhle Nanto
  * 240443608
  * 28 July 2026
@@ -28,12 +27,12 @@ import java.util.Optional;
 public class ReviewServiceImpl implements IReviewService {
 
     private final IReviewRepository reviewRepository;
-    private final StudentRepository studentRepository;
+    private final IStudentRepository studentRepository;
     private final ILaundryServiceRepository laundryServiceRepository;
 
     public ReviewServiceImpl(
             IReviewRepository reviewRepository,
-            StudentRepository studentRepository,
+            IStudentRepository studentRepository,
             ILaundryServiceRepository laundryServiceRepository) {
 
         this.reviewRepository = reviewRepository;
@@ -58,7 +57,7 @@ public class ReviewServiceImpl implements IReviewService {
                                 ));
 
         LaundryService laundryService =
-                laundryServiceRepository.findById(serviceId)
+                laundryServiceRepository.findById(String.valueOf(serviceId))
                         .orElseThrow(() ->
                                 new NoSuchElementException(
                                         "LaundryService not found with id: "
@@ -89,7 +88,7 @@ public class ReviewServiceImpl implements IReviewService {
     public List<Review> getReviewsByStudent(
             Long studentId) {
 
-        return reviewRepository.findByStudent_Id(studentId);
+        return reviewRepository.findByStudentStudentId(studentId);
     }
 
     @Override
@@ -98,7 +97,7 @@ public class ReviewServiceImpl implements IReviewService {
             Long serviceId) {
 
         return reviewRepository
-                .findByLaundryService_Id(serviceId);
+                .findByLaundryServiceServiceId(serviceId);
     }
 
     @Override
@@ -130,7 +129,7 @@ public class ReviewServiceImpl implements IReviewService {
                         ));
     }
 
-    public Review createReview(long l, long l1, int i, String s, LocalDateTime date) {
+    public Review createReview(long L, long L1, int I, String S, LocalDateTime Date) {
         return null;
     }
 }

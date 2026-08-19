@@ -64,7 +64,7 @@ public class BookingController {
 
             LaundryService laundryService = null;
             if (serviceId != null) {
-                laundryService = laundryServiceRepository.findById(serviceId)
+                laundryService = laundryServiceRepository.findById(String.valueOf(serviceId))
                         .orElseThrow(() -> notFound("LaundryService", serviceId));
             }
 
