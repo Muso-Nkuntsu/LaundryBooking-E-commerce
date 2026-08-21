@@ -24,6 +24,7 @@ public interface IBookingService {
 
         Booking cancelBooking(Long bookingId);
         Booking updateStatus(Long bookingId, BookingStatus status);
+        Booking deleteBooking(Long bookingId);
         Optional<Booking> findById(Long bookingId);
         List<Booking> findByStudent(Student student);
         List<Booking> findAll();
