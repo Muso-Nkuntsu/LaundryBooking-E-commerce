@@ -61,7 +61,15 @@ public class TimeSlotServiceImpl implements TimeSlotService {
     public List<TimeSlot> getAllTimeSlots() {
         return timeSlotRepository.findAll();
     }
-
+    @Override
+    @Transactional
+    public boolean deleteTimeSlot(Long timeSlotId) {
+        if (timeSlotRepository.existsById(timeSlotId)) {
+            timeSlotRepository.deleteById(timeSlotId);
+            return true;
+        }
+        return false;
+    }
     private TimeSlot getTimeSlotOrThrow(Long timeSlotId) {
         return timeSlotRepository.findById(timeSlotId)
                 .orElseThrow(() -> new NoSuchElementException("TimeSlot not found with id: " + timeSlotId));

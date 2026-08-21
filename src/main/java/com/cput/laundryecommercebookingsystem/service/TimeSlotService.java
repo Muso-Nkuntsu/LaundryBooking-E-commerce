@@ -17,5 +17,6 @@ public interface TimeSlotService {
     List<TimeSlot> getAvailableTimeSlots();
     List<TimeSlot> getTimeSlotsByDate(LocalDate date);
     List<TimeSlot> getAllTimeSlots();
+    boolean deleteTimeSlot(Long timeSlotId);
 }
 
