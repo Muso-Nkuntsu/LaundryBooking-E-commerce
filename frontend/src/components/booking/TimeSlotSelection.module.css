@@ -1,0 +1,311 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.heading {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.subheading {
+  color: var(--color-ink-muted);
+  font-size: 14px;
+}
+
+
+.dateRow {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  scrollbar-width: thin;
+}
+
+.dateChip {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 64px;
+  padding: var(--space-3) var(--space-2);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  position: relative;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
+}
+
+.dateChip:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.dateChipDay {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-muted);
+}
+
+.dateChipNumber {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.dateChipMonth {
+  font-size: 11px;
+  color: var(--color-ink-muted);
+}
+
+.dateChipSelected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.dateChipSelected .dateChipDay,
+.dateChipSelected .dateChipMonth {
+  color: var(--color-primary-tint);
+}
+
+.dateChipSelected .dateChipNumber {
+  color: white;
+}
+
+.dateChipDim {
+  opacity: 0.55;
+}
+
+.dateChipFullTag {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-danger);
+  margin-top: 2px;
+}
+
+
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12px;
+  color: var(--color-ink-muted);
+  font-weight: 500;
+}
+
+.legendSwatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.legendAvailable {
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary);
+}
+
+.legendSelected {
+  background: var(--color-primary);
+}
+
+.legendUnavailable {
+  background: var(--color-unavailable);
+}
+
+
+.slotGrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-3);
+}
+
+.ticket {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
+}
+
+.ticket:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-1px);
+}
+
+
+.ticketStub {
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: var(--color-primary-tint);
+  border-right: 2px dashed var(--color-border-strong);
+  position: relative;
+}
+
+.ticketStub::before,
+.ticketStub::after {
+  content: '';
+  position: absolute;
+  right: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-base);
+}
+
+.ticketStub::before {
+  top: -7px;
+}
+
+.ticketStub::after {
+  bottom: -7px;
+}
+
+.ticketBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--space-3) var(--space-3);
+  min-width: 0;
+}
+
+.ticketTime {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.ticketStatus {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-primary);
+}
+
+.ticketSelected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.ticketSelected .ticketBody {
+  background: var(--color-primary);
+}
+
+.ticketSelected .ticketTime,
+.ticketSelected .ticketStatus {
+  color: white;
+}
+
+.ticketUnavailable {
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+.ticketUnavailable .ticketStub {
+  background: var(--color-unavailable);
+}
+
+.ticketUnavailable .ticketStatus {
+  color: var(--color-unavailable-ink);
+}
+
+.ticketUnavailable .ticketTime {
+  color: var(--color-ink-faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--color-unavailable-ink);
+}
+
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.footerHint {
+  font-size: 13px;
+  color: var(--color-ink-muted);
+}
+
+.confirmButton {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 14px;
+  padding: var(--space-3) var(--space-5);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard), opacity var(--duration-fast) var(--ease-standard);
+}
+
+.confirmButton:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.confirmButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.empty {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-ink-muted);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+@media (max-width: 480px) {
+  .slotGrid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
