@@ -1,5 +1,5 @@
 import { Navigate, Link } from 'react-router-dom';
-import { useBooking } from '../context/useBooking';
+import { useBooking } from '../../context/useBooking';
 import styles from './BookingConfirmationPage.module.css';
 
 function formatPrice(price, currency = 'ZAR') {

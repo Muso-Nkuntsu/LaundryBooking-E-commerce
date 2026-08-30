@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import LaundryServices from '../components/laundry/LaundryServices';
-import { useBooking } from '../context/useBooking';
+import LaundryServices from '../../components/laundry/LaundryServices';
+import { useBooking } from '../../context/useBooking';
 
 export default function LaundryPage() {
   const { residenceId, selectedServices, toggleService } = useBooking();

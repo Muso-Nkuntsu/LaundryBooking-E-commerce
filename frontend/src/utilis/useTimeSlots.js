@@ -1,13 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { getAvailableDates, getTimeSlots } from '../api/timeSlotService';
+import { getAvailableDates, getTimeSlots } from '../assets/timeSlotService';
 
-/**
- * Drives the Time Slot Selection screen: loads which dates have availability,
- * then loads slots for whichever date is selected (defaulting to the first
- * available date).
- *
- * @param {string} residenceId
- */
+
 export function useTimeSlots(residenceId) {
   const [dates, setDates] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
