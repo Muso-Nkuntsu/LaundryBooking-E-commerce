@@ -1,9 +1,5 @@
-﻿/**
- * ProductFactoryTest.java
- * Author: Snalo (230541844)
- * Date: 25 July 2026
- */
-package com.cput.laundryecommercebookingsystem.factory;
+﻿package com.cput.laundryecommercebookingsystem.factory;
+
 
 import com.cput.laundryecommercebookingsystem.factory.ProductFactory;
 import org.junit.jupiter.api.Test;
@@ -11,6 +7,11 @@ import com.cput.laundryecommercebookingsystem.domain.Product;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * ProductFactoryTest.java
+ * Author: Snalo (230541844)
+ * Date: 25 July 2026
+ */
 class ProductFactoryTest {
 
     @Test

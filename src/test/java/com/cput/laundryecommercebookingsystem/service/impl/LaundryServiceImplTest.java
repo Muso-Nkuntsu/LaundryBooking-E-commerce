@@ -1,8 +1,4 @@
-﻿/**
- * LaundryServiceImplTest.java
- * Author: Snalo (230541844)
- * Date: 25 July 2026
- */
+﻿
 package com.cput.laundryecommercebookingsystem.service.impl;
 
 import com.cput.laundryecommercebookingsystem.service.impl.LaundryServiceImpl;
@@ -17,6 +13,11 @@ import com.cput.laundryecommercebookingsystem.domain.LaundryService;
 import com.cput.laundryecommercebookingsystem.factory.LaundryServiceFactory;
 
 import static org.junit.jupiter.api.Assertions.*;
+/**
+ * LaundryServiceImplTest.java
+ * Author: Snalo (230541844)
+ * Date: 25 July 2026
+ */
 
 @SpringBootTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
