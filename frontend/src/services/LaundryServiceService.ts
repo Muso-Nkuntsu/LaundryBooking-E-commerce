@@ -1,16 +1,14 @@
-import api from "./api";
-import { LaundryService } from "../types/LaundryService";
+import { apiGet } from "./api";
+import type { LaundryService } from "../types/LaundryService";
 
 
 export const laundryServiceService = {
-
-  async getAllServices(): Promise<LaundryService[]> {
-    const response = await api.get<LaundryService[]>("/laundry-services");
-    return response.data;
+ 
+  getAllServices(): Promise<LaundryService[]> {
+    return apiGet<LaundryService[]>("/laundry-services");
   },
 
-  async getServiceById(id: number): Promise<LaundryService> {
-    const response = await api.get<LaundryService>(`/laundry-services/${id}`);
-    return response.data;
+  getServiceById(id: number): Promise<LaundryService> {
+    return apiGet<LaundryService>(`/laundry-services/${id}`);
   },
 };

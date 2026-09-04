@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { TimeSlot, DateGroup } from "../../types/TimeSlot";
-import { timeSlotService } from "../../services/timeSlotService";
+import type { TimeSlot, DateGroup } from "../../types/TimeSlot";
+import { timeSlotService } from "../../services/TimeSlotService";
 import { getApiErrorMessage } from "../../services/api";
-import { colors, radius, type, shadow } from "../../styles/theme";
+import { colors, radius, type, shadow } from "../../styles/Theme";
 import {
   formatWeekday,
   formatDayNumber,
@@ -10,14 +10,12 @@ import {
   formatFullDate,
   formatTimeRange,
   isToday,
-} from "../../utils/formatDate";
-import Loading from "../common/Loading";
-import ErrorMessage from "../common/ErrorMessage";
+} from "../../utilis/FormatDate";
 
 interface TimeSlotSelectorProps {
   
   onSlotSelect: (slot: TimeSlot) => void;
- 
+
   selectedSlotId?: number | null;
  
   daysAhead?: number;
@@ -68,7 +66,7 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
 
   useEffect(() => {
     loadSlots();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+ 
   }, [daysAhead]);
 
   const dateGroups = useMemo(() => groupSlotsByDate(slots), [slots]);
@@ -93,22 +91,87 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
   };
 
   if (loading) {
-    return <Loading message="Loading available time slots..." />;
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "10px",
+          padding: "40px 16px",
+          fontFamily: type.body,
+          color: colors.textMuted,
+          fontSize: "14px",
+        }}
+        role="status"
+        aria-live="polite"
+      >
+        <span
+          style={{
+            width: "28px",
+            height: "28px",
+            borderRadius: "50%",
+            border: `3px solid ${colors.primaryLight}`,
+            borderTopColor: colors.primary,
+          }}
+        />
+        Loading available time slots...
+      </div>
+    );
   }
 
   if (error) {
-    return <ErrorMessage message={error} onRetry={loadSlots} />;
+    return (
+      <div
+        role="alert"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+          gap: "10px",
+          padding: "28px 20px",
+          backgroundColor: colors.dangerLight,
+          border: `1px solid ${colors.dangerBorder}`,
+          borderRadius: radius.md,
+        }}
+      >
+        <p style={{ fontFamily: type.body, fontSize: "14px", color: colors.text, margin: 0 }}>
+          {error}
+        </p>
+        <button
+          type="button"
+          onClick={loadSlots}
+          style={{
+            padding: "8px 18px",
+            borderRadius: radius.pill,
+            border: `1px solid ${colors.danger}`,
+            backgroundColor: "transparent",
+            color: colors.danger,
+            fontFamily: type.body,
+            fontSize: "13px",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Try again
+        </button>
+      </div>
+    );
   }
 
   if (dateGroups.length === 0) {
     return (
-      <ErrorMessage message="No time slots are available right now. Please check back later." />
+      <p style={{ fontFamily: type.body, fontSize: "14px", color: colors.textMuted }}>
+        No time slots are available right now. Please check back later.
+      </p>
     );
   }
 
   return (
     <div style={{ width: "100%" }}>
-      {/* Date strip */}
+      {}
       <div
         style={{
           display: "flex",
@@ -138,9 +201,7 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
                 minWidth: "64px",
                 padding: "10px 8px",
                 borderRadius: radius.md,
-                border: `1px solid ${
-                  isSelected ? colors.primary : colors.border
-                }`,
+                border: `1px solid ${isSelected ? colors.primary : colors.border}`,
                 backgroundColor: isSelected ? colors.primary : colors.surface,
                 cursor: "pointer",
                 boxShadow: isSelected ? shadow.card : "none",
@@ -193,33 +254,15 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
       </div>
 
       {}
-      <div
-        style={{
-          display: "flex",
-          gap: "16px",
-          marginBottom: "12px",
-          flexWrap: "wrap",
-        }}
-      >
+      <div style={{ display: "flex", gap: "16px", marginBottom: "12px", flexWrap: "wrap" }}>
         <LegendItem color={colors.surface} border={colors.primary} label="Available" />
         <LegendItem color={colors.primary} border={colors.primary} label="Selected" />
-        <LegendItem
-          color={colors.unavailableBg}
-          border={colors.unavailableBorder}
-          label="Booked"
-        />
+        <LegendItem color={colors.unavailableBg} border={colors.unavailableBorder} label="Booked" />
       </div>
 
       {}
       {activeGroup && (
-        <p
-          style={{
-            fontFamily: type.body,
-            fontSize: "13px",
-            color: colors.textMuted,
-            margin: "0 0 10px",
-          }}
-        >
+        <p style={{ fontFamily: type.body, fontSize: "13px", color: colors.textMuted, margin: "0 0 10px" }}>
           {formatFullDate(activeGroup.date)}
         </p>
       )}
@@ -234,8 +277,7 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
       >
         {activeGroup?.slots.map((slot) => {
           const isAvailable = slot.status === "AVAILABLE";
-          const isSelected =
-            slot.id === internalSelectedId && isAvailable;
+          const isSelected = slot.id === internalSelectedId && isAvailable;
 
           let bg: string = colors.surface;
           let border: string = colors.border;
@@ -263,11 +305,7 @@ const TimeSlotSelector: React.FC<TimeSlotSelectorProps> = ({
               onClick={() => handleSelectSlot(slot)}
               aria-pressed={isSelected}
               aria-disabled={!isAvailable}
-              title={
-                isAvailable
-                  ? "Available — select this slot"
-                  : "This slot is already booked"
-              }
+              title={isAvailable ? "Available — select this slot" : "This slot is already booked"}
               style={{
                 padding: "12px 8px",
                 borderRadius: radius.md,

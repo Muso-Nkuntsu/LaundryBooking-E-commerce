@@ -1,36 +1,84 @@
-import axios from "axios";
-import type { AxiosError } from "axios";
+const BASE_URL: string =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080/api";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  timeout: 10000,
-});
+export class ApiError extends Error {
+  status: number;
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("authToken");
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
   }
-  return config;
-});
+}
+
+const buildHeaders = (extra?: HeadersInit): HeadersInit => {
+  const token = localStorage.getItem("authToken");
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(extra ?? {}),
+  };
+};
+
+const buildQuery = (params?: Record<string, string | number | undefined>): string => {
+  if (!params) return "";
+  const entries = Object.entries(params).filter(([, v]) => v !== undefined) as [
+    string,
+    string | number
+  ][];
+  if (entries.length === 0) return "";
+  const search = new URLSearchParams();
+  entries.forEach(([key, value]) => search.set(key, String(value)));
+  return `?${search.toString()}`;
+};
+
+const handleResponse = async <T>(response: Response): Promise<T> => {
+  if (!response.ok) {
+    let message = `Request failed with status ${response.status}`;
+    try {
+      const body = await response.json();
+      if (body?.message) message = body.message;
+    } catch {
+    
+    }
+    throw new ApiError(message, response.status);
+  }
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  return (await response.json()) as T;
+};
+
+export const apiGet = async <T>(
+  path: string,
+  params?: Record<string, string | number | undefined>
+): Promise<T> => {
+  const response = await fetch(`${BASE_URL}${path}${buildQuery(params)}`, {
+    method: "GET",
+    headers: buildHeaders(),
+  });
+  return handleResponse<T>(response);
+};
+
+export const apiPost = async <T>(path: string, body?: unknown): Promise<T> => {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: "POST",
+    headers: buildHeaders(),
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  return handleResponse<T>(response);
+};
 
 export const getApiErrorMessage = (error: unknown): string => {
-  if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    if (axiosError.response?.data?.message) {
-      return axiosError.response.data.message;
-    }
-    if (axiosError.response?.status === 404) {
+  if (error instanceof ApiError) {
+    if (error.status === 404) {
       return "The requested resource could not be found.";
     }
-    if (!axiosError.response) {
-      return "Could not reach the server. Check your connection and try again.";
-    }
+    return error.message;
+  }
+  if (error instanceof TypeError) {
+   
+    return "Could not reach the server. Check your connection and try again.";
   }
   return "Something went wrong. Please try again.";
 };
-
-export default api;

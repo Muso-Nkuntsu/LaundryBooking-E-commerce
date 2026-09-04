@@ -10,7 +10,6 @@ export const colors = {
   primaryHover: "#175941",
   primaryLight: "#E3F0EA",
 
-  accent: "#D98E3B",
   accentLight: "#FBEFDD",
 
   unavailableBg: "#ECECE9",
@@ -34,17 +33,6 @@ export const radius = {
   pill: "999px",
 } as const;
 
-export const spacing = (multiplier: number): string => `${multiplier * 4}px`;
-
 export const shadow = {
   card: "0 1px 2px rgba(28, 38, 32, 0.06), 0 1px 1px rgba(28, 38, 32, 0.04)",
-};
-
-export const injectKeyframesOnce = (id: string, css: string): void => {
-  if (typeof document === "undefined") return;
-  if (document.getElementById(id)) return;
-  const styleEl = document.createElement("style");
-  styleEl.id = id;
-  styleEl.textContent = css;
-  document.head.appendChild(styleEl);
 };

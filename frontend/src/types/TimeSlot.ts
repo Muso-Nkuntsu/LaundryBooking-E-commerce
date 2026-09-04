@@ -10,6 +10,7 @@ export interface TimeSlot {
   machineName?: string;
 }
 
+
 export interface DateGroup {
   date: string;
   slots: TimeSlot[];

@@ -1,25 +1,18 @@
-import api from "./api";
-import { TimeSlot } from "../types/TimeSlot";
+import { apiGet } from "./api";
+import type { TimeSlot } from "../types/TimeSlot";
 
 export const timeSlotService = {
-
-  async getUpcomingTimeSlots(days = 7): Promise<TimeSlot[]> {
-    const response = await api.get<TimeSlot[]>("/timeslots/upcoming", {
-      params: { days },
-    });
-    return response.data;
+  
+  getUpcomingTimeSlots(days = 7): Promise<TimeSlot[]> {
+    return apiGet<TimeSlot[]>("/timeslots/upcoming", { days });
   },
 
-  async getTimeSlotsByDate(date: string): Promise<TimeSlot[]> {
-    const response = await api.get<TimeSlot[]>("/timeslots", {
-      params: { date },
-    });
-    return response.data;
+  getTimeSlotsByDate(date: string): Promise<TimeSlot[]> {
+    return apiGet<TimeSlot[]>("/timeslots", { date });
   },
 
- 
-  async getTimeSlotById(id: number): Promise<TimeSlot> {
-    const response = await api.get<TimeSlot>(`/timeslots/${id}`);
-    return response.data;
+  
+  getTimeSlotById(id: number): Promise<TimeSlot> {
+    return apiGet<TimeSlot>(`/timeslots/${id}`);
   },
 };

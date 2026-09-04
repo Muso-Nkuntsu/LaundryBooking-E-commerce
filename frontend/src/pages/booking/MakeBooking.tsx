@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { TimeSlot } from "../../types/TimeSlot";
-import { colors, radius, type } from "../../styles/theme";
-import { formatFullDate, formatTimeRange } from "../../utils/formatDate";
+import type { TimeSlot } from "../../types/TimeSlot";
+import { colors, radius, type } from "../../styles/Theme";
+import { formatFullDate, formatTimeRange } from "../../utilis/FormatDate";
 import TimeSlotSelector from "../../components/booking/TimeSlotSelector";
 
 interface MakeBookingLocationState {
@@ -13,50 +13,24 @@ interface MakeBookingLocationState {
 const MakeBooking: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { laundryServiceId, laundryServiceName } =
-    (location.state as MakeBookingLocationState) ?? {};
+  const { laundryServiceId, laundryServiceName } = (location.state as MakeBookingLocationState) ?? {};
 
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
 
   const handleConfirm = () => {
     if (!selectedSlot) return;
     navigate("/bookings/confirmation", {
-      state: {
-        timeSlot: selectedSlot,
-        laundryServiceId,
-        laundryServiceName,
-      },
+      state: { timeSlot: selectedSlot, laundryServiceId, laundryServiceName },
     });
   };
 
   return (
-    <div
-      style={{
-        maxWidth: "720px",
-        margin: "0 auto",
-        padding: "clamp(16px, 4vw, 32px)",
-        boxSizing: "border-box",
-      }}
-    >
+    <div style={{ maxWidth: "720px", margin: "0 auto", padding: "clamp(16px, 4vw, 32px)", boxSizing: "border-box" }}>
       <header style={{ marginBottom: "20px" }}>
-        <h1
-          style={{
-            fontFamily: type.display,
-            fontSize: "clamp(22px, 4vw, 28px)",
-            color: colors.text,
-            margin: "0 0 4px",
-          }}
-        >
+        <h1 style={{ fontFamily: type.display, fontSize: "clamp(22px, 4vw, 28px)", color: colors.text, margin: "0 0 4px" }}>
           Choose a time slot
         </h1>
-        <p
-          style={{
-            fontFamily: type.body,
-            fontSize: "14px",
-            color: colors.textMuted,
-            margin: 0,
-          }}
-        >
+        <p style={{ fontFamily: type.body, fontSize: "14px", color: colors.textMuted, margin: 0 }}>
           Pick a date and an available slot for your laundry booking.
         </p>
       </header>
@@ -79,10 +53,7 @@ const MakeBooking: React.FC = () => {
         </div>
       )}
 
-      <TimeSlotSelector
-        onSlotSelect={setSelectedSlot}
-        selectedSlotId={selectedSlot?.id ?? null}
-      />
+      <TimeSlotSelector onSlotSelect={setSelectedSlot} selectedSlotId={selectedSlot?.id ?? null} />
 
       <div
         style={{
