@@ -20,6 +20,8 @@ public interface IOrderService {
     Order placeOrder(int orderId);
 
     Order cancelOrder(int orderId);
+    
+    void deleteOrder(int orderId);
 
     Order updateOrderStatus(int orderId, OrderStatus newStatus);
 

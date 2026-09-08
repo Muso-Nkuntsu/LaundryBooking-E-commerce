@@ -5,5 +5,4 @@ export interface LaundryService {
   price: number;
   isAvailable: boolean;
   durationMinutes?: number;
-  imageUrl?: string;
 }

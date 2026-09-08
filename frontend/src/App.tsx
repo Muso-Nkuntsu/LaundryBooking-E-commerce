@@ -1,16 +1,9 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
-import Dashboard from "./pages/dashboard/Dashboard";
-import Profile from "./pages/profile/Profile";
-import Payment from "./pages/payment/Payment";
-import LaundryRooms from "./pages/laundry/LaundryRooms";
-import LaundryRoomDetails from "./pages/laundry/LaundryRoomDetails";
-import LaundryMachines from "./pages/laundry/LaundryMachines";
-import MachineDetails from "./pages/laundry/MachineDetails";
-import Products from "./pages/products/Products";
-import ProductDetails from "./pages/products/ProductDetails";
+import React from "react";
+import AppRoutes from "./routes/AppRoutes";
 
+const App: React.FC = () => {
+  return <AppRoutes />;
+};
 import MakeBooking from "./pages/booking/MakeBooking";
 import BookingConfirmation from "./pages/booking/BookingConfirmation";
 import MyBookings from "./pages/booking/MyBookings";
