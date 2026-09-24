@@ -29,7 +29,7 @@ public class LaundryServiceImpl implements ILaundryService {
     }
 
     @Override
-    public LaundryService read(String id) {
+    public LaundryService read(Long id) {
         return repository.findById(id).orElse(null);
     }
 
@@ -42,7 +42,7 @@ public class LaundryServiceImpl implements ILaundryService {
     }
 
     @Override
-    public boolean delete(String id) {
+    public boolean delete(Long id) {
         if (repository.existsById(id)) {
             repository.deleteById(id);
             return true;

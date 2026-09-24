@@ -12,7 +12,7 @@ import java.util.List;
  * Date: 28 July 2026
  */
 
-public interface IOrderItemRepository extends JpaRepository<OrderItem, Integer> {
+public interface IOrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     List<OrderItem> findByOrder(Order order);
 

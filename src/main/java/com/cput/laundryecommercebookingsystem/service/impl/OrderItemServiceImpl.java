@@ -43,13 +43,13 @@ public class OrderItemServiceImpl implements IOrderItemService {
 
     @Override
     @Transactional
-    public void deleteOrderItem(int orderItemId) {
+    public void deleteOrderItem(Long orderItemId) {
         IOrderItemRepository.deleteById(orderItemId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<OrderItem> getOrderItemById(int orderItemId) {
+    public Optional<OrderItem> getOrderItemById(Long orderItemId) {
         return IOrderItemRepository.findById(orderItemId);
     }
 
