@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { NotificationItem } from '../types/notification';
-import { notificationService } from '../services/notificationService';
+import { NotificationItem } from '../../types/notification';
+import { notificationService } from '../../services/notificationService';
 
 export const NotificationList: React.FC = () => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);

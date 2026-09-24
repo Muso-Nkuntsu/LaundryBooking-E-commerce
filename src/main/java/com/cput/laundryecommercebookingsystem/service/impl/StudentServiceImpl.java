@@ -27,7 +27,17 @@ public class StudentServiceImpl implements IStudentService {
     @Override
     @Transactional
     public Student createStudent(Student student) {
-        return IStudentRepository.save(student);
+
+        Student studentToSave = new Student.Builder()
+                .setFirstName(student.getFirstName())
+                .setLastName(student.getLastName())
+                .setEmail(student.getEmail())
+                .setPhoneNumber(student.getPhoneNumber())
+                .setPassword(student.getPassword())
+                .setCreatedAt(student.getCreatedAt())
+                .build();
+
+        return IStudentRepository.save(studentToSave);
     }
 
     @Override

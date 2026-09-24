@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { Product } from "../../types/Product";
 import { getAllProducts } from "../../services/productService";
-import { addToCart } from "../../services/cartService";
 
 function Products() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -19,7 +18,7 @@ function Products() {
 
   const handleAdd = (product: Product) => {
     if (product.inventoryQuantity <= 0) return;
-    addToCart(product);
+    (product);
     setMessage(`${product.name} added to your cart.`);
     window.setTimeout(() => setMessage(""), 2500);
   };

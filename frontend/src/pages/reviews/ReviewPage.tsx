@@ -1,7 +1,7 @@
 // src/pages/reviews/ReviewsPage.tsx
 
 import React from 'react';
-import { ReviewList } from '../../components/ReviewList';
+import { ReviewList } from '../../components/review/ReviewList';
 
 export const ReviewsPage: React.FC = () => {
   // Pass currentUserId from your auth context or state management solution if available

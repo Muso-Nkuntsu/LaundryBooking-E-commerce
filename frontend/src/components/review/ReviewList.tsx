@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Review, ReviewSummary } from '../types/review';
+import { Review, ReviewSummary } from '../../types/review';
 import { reviewService } from '../services/reviewService';
 import { Rating } from './Rating';
 import { ReviewForm } from './ReviewForm';
