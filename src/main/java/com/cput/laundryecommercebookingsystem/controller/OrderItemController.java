@@ -39,7 +39,7 @@ public class OrderItemController {
     }
 
     @GetMapping("/read/{id}")
-    public ResponseEntity<OrderItem> read(@PathVariable int id) {
+    public ResponseEntity<OrderItem> read(@PathVariable Long id) {
 
         Optional<OrderItem> orderItem = orderItemService.getOrderItemById(id);
 
@@ -60,7 +60,7 @@ public class OrderItemController {
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Boolean> delete(@PathVariable int id) {
+    public ResponseEntity<Boolean> delete(@PathVariable Long id) {
 
         orderItemService.deleteOrderItem(id);
         return ResponseEntity.ok(true);

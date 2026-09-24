@@ -32,7 +32,7 @@ public class OrderController {
 
 
     @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrderById(@PathVariable int id) {
+    public ResponseEntity<Order> getOrderById(@PathVariable Long id) {
         return orderService.getOrderById(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -44,21 +44,21 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrdersByStatus(status));
     }
 
-    // 
+    // Get orders by student ID
     @GetMapping("/student/{studentId}")
     public ResponseEntity<List<Order>> getOrdersByStudent(
-            @PathVariable int studentId) {
+            @PathVariable Long studentId) {
         return ResponseEntity.ok(orderService.getOrdersByStudent(studentId));
     }
 
     
     @PatchMapping("/{id}/place")
-    public ResponseEntity<Order> placeOrder(@PathVariable int id) {
+    public ResponseEntity<Order> placeOrder(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.placeOrder(id));
     }
 
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<Order> cancelOrder(@PathVariable int id) {
+    public ResponseEntity<Order> cancelOrder(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.cancelOrder(id));
     }
 
@@ -67,7 +67,7 @@ public class OrderController {
 
   
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOrder(@PathVariable int id) {
+    public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
         orderService.deleteOrder(id);
         return ResponseEntity.noContent().build();
     }

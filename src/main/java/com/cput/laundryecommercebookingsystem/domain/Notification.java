@@ -27,7 +27,7 @@ public class Notification {
     @Column(name = "notification_id")
     private Long id;
 
-    // FK: studentId — the student this notification is intended for
+    // FK: studentId
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;

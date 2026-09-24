@@ -57,7 +57,7 @@ public class ReviewServiceImpl implements IReviewService {
                                 ));
 
         LaundryService laundryService =
-                laundryServiceRepository.findById(String.valueOf(serviceId))
+                laundryServiceRepository.findById(serviceId)
                         .orElseThrow(() ->
                                 new NoSuchElementException(
                                         "LaundryService not found with id: "

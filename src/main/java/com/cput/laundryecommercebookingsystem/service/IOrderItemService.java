@@ -19,9 +19,9 @@ public interface IOrderItemService {
 
     OrderItem updateOrderItem(OrderItem orderItem);
 
-    void deleteOrderItem(int orderItemId);
+        void deleteOrderItem(Long orderItemId);
 
-    Optional<OrderItem> getOrderItemById(int orderItemId);
+    Optional<OrderItem> getOrderItemById(Long orderItemId);
 
     List<OrderItem> getOrderItemsByOrder(Order order);
 

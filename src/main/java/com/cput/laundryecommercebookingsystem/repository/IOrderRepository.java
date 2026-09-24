@@ -15,13 +15,13 @@ import java.util.List;
  *  * 25 July 2026
  *  */
 
-public interface IOrderRepository extends JpaRepository<Order, Integer>{
+public interface IOrderRepository extends JpaRepository<Order, Long>{
 
     List<Order> findByStatus(OrderStatus status);
 
     List<Order> findByOrderDateBetween(LocalDateTime start, LocalDateTime end);
 
     @Query("SELECT o FROM Order o WHERE o.studentId.studentId = :studentId")
-    List<Order> findByStudentPrimaryKey(@Param("studentId") int studentId);
+    List<Order> findByStudentPrimaryKey(@Param("studentId") Long studentId);
 
 }

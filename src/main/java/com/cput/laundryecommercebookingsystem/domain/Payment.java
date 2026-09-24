@@ -1,9 +1,10 @@
 package com.cput.laundryecommercebookingsystem.domain;
 
-// 222665963 Libolwetu Nokenke
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
+
+// 222665963 Libolwetu Nokenke
 
 @Entity
 @Table(name = "payments")
@@ -13,25 +14,35 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "payment_id")
     private Long paymentId;
+
     @Column(name = "amount")
     private double amount;
+
     @Column(name = "payment_date")
     private LocalDateTime paymentDate;
+
     @Column(name = "payment_method")
     private String paymentMethod;
+
     @Column(name = "status")
     private String status;
+
     @Column(name = "transaction_ref")
     private String transactionRef;
+
     @Column(name = "booking_id")
     private Long bookingId;
+
     @Column(name = "order_id")
     private Long orderId;
-    @Column(name = "service_id")
-    private Long serviceId;
 
-    protected Payment() {
-    }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @Column(name = "service_id", nullable = false)
+    private LaundryService service;
+
+    protected Payment() {}
+
+
     private Payment(Builder builder) {
         this.paymentId = builder.paymentId;
         this.amount = builder.amount;
@@ -41,7 +52,7 @@ public class Payment {
         this.transactionRef = builder.transactionRef;
         this.bookingId = builder.bookingId;
         this.orderId = builder.orderId;
-        this.serviceId = builder.serviceId;
+        this.service = builder.service;
     }
 
     public static Builder builder() {
@@ -72,8 +83,8 @@ public class Payment {
     public Long getOrderId() {
         return orderId;
     }
-    public Long getServiceId() {
-        return serviceId;
+    public LaundryService getService() {
+        return service;
     }
     @Override
     public boolean equals(Object o) {
@@ -84,7 +95,7 @@ public class Payment {
                 Objects.equals(paymentId, payment.paymentId) &&
                 Objects.equals(bookingId, payment.bookingId) &&
                 Objects.equals(orderId, payment.orderId) &&
-                Objects.equals(serviceId, payment.serviceId) &&
+                Objects.equals(service, payment.service) &&
                 Objects.equals(paymentDate, payment.paymentDate) &&
                 Objects.equals(paymentMethod, payment.paymentMethod) &&
                 Objects.equals(status, payment.status) &&
@@ -93,7 +104,7 @@ public class Payment {
     @Override
     public int hashCode() {
         return Objects.hash(paymentId, amount, paymentDate, paymentMethod,
-                status, transactionRef, bookingId, orderId, serviceId);
+                status, transactionRef, bookingId, orderId, service);
     }
     @Override
     public String toString() {
@@ -106,7 +117,7 @@ public class Payment {
                 ", transactionRef='" + transactionRef + '\'' +
                 ", bookingId=" + bookingId +
                 ", orderId=" + orderId +
-                ", serviceId=" + serviceId +
+                ", service=" + service +
                 '}';
     }
     public static class Builder {
@@ -118,7 +129,7 @@ public class Payment {
         private String transactionRef;
         private Long bookingId;
         private Long orderId;
-        private Long serviceId;
+        private LaundryService service;
 
         public Builder setPaymentId(Long paymentId) {
             this.paymentId = paymentId;
@@ -152,8 +163,8 @@ public class Payment {
             this.orderId = orderId;
             return this;
         }
-        public Builder setServiceId(Long serviceId) {
-            this.serviceId = serviceId;
+        public Builder setService(LaundryService service) {
+            this.service = service;
             return this;
         }
         public Payment build() {

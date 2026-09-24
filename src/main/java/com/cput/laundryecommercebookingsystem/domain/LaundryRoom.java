@@ -20,7 +20,7 @@ public class LaundryRoom {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "room_id", nullable = false, updatable = false)
-    private int roomId;
+    private Long roomId;
 
 
     @Column(name = "room_number", nullable = false, length = 50)
@@ -59,7 +59,7 @@ public class LaundryRoom {
 
     }
 
-    public int getRoomId() {
+    public Long getRoomId() {
         return roomId;
     }
 
@@ -156,7 +156,7 @@ public class LaundryRoom {
     }
 
     public static class Builder {
-        private int roomId;
+        private Long roomId;
         private String roomNumber;
         private String location;
         private int capacity;
@@ -164,7 +164,7 @@ public class LaundryRoom {
         private boolean isActive = false;
         private List<LaundryMachine> machines = new ArrayList<>();
 
-        public Builder roomId(int roomId) {
+        public Builder roomId(Long roomId) {
             this.roomId = roomId;
             return this;
         }
