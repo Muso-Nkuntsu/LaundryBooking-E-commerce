@@ -1,3 +1,5 @@
+import type { BookingStatus, LaundryMachine } from "./booking";
+
 export interface TimeSlot {
   id: number;
   startTime: string;

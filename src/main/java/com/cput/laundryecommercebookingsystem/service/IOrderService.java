@@ -17,19 +17,19 @@ public interface IOrderService {
 
     Order createOrder(Student student, List<OrderItem> orderItems, double totalAmount);
 
-    Order placeOrder(int orderId);
+    Order placeOrder(Long orderId);
 
-    Order cancelOrder(int orderId);
+    Order cancelOrder(Long orderId);
     
-    void deleteOrder(int orderId);
+    void deleteOrder(Long orderId);
 
-    Order updateOrderStatus(int orderId, OrderStatus newStatus);
+    Order updateOrderStatus(Long orderId, OrderStatus newStatus);
 
-    Optional<Order> getOrderById(int orderId);
+    Optional<Order> getOrderById(Long orderId);
 
     List<Order> getOrdersByStatus(OrderStatus status);
 
-    List<Order> getOrdersByStudent(int studentId);
+    List<Order> getOrdersByStudent(Long studentId);
 
     List<Order> getAllOrders();
 

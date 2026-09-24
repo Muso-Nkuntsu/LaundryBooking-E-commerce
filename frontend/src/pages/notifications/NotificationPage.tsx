@@ -1,8 +1,8 @@
 // src/pages/notifications/NotificationsPage.tsx
 
 import React, { useState } from 'react';
-import { NotificationList } from '../../components/NotificationList';
-import { NotificationBadge } from '../../components/NotificationBadge';
+import { NotificationList } from '../../components/notification/NotificationList';
+import { NotificationBadge } from '../../components/notification/NotificationBadge';
 
 export const NotificationsPage: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState<number>(3);

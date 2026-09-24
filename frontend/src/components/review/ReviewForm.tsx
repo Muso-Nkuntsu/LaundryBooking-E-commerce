@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Rating } from './Rating';
-import { CreateReviewPayload } from '../types/review';
+import { CreateReviewPayload } from '../../types/review';
 
 interface ReviewFormProps {
   onSubmit: (payload: CreateReviewPayload) => Promise<void>;
