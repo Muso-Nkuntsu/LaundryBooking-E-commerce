@@ -25,7 +25,8 @@ function ProductDetails() {
 
   const handleAdd = () => {
     if (!product || product.inventoryQuantity <= 0) return;
-    addToCart(product, quantity);
+    product
+   quantity;
     setMessage(`${quantity} × ${product.name} added to your cart.`);
   };
 

@@ -97,7 +97,7 @@ public class ReviewServiceImpl implements IReviewService {
             Long serviceId) {
 
         return reviewRepository
-                .findByLaundryServiceServiceId(serviceId);
+                .findByLaundryService(serviceId);
     }
 
     @Override
