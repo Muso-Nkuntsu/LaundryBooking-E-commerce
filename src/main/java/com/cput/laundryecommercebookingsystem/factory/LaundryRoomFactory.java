@@ -1,7 +1,8 @@
 package com.cput.laundryecommercebookingsystem.factory;
 
+import com.cput.laundryecommercebookingsystem.domain.LaundryMachine;
 import com.cput.laundryecommercebookingsystem.domain.LaundryRoom;
-import com.cput.laundryecommercebookingsystem.domain.Machine;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +28,7 @@ public final class LaundryRoomFactory {
                                                 String location,
                                                 int capacity,
                                                 String description,
-                                                List<Machine> machines) {
+                                                List<LaundryMachine> machines) {
 
         if (roomNumber == null || roomNumber.isBlank()) {
             throw new IllegalArgumentException("Room number must not be blank.");

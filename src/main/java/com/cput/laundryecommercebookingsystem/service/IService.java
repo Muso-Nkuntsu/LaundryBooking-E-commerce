@@ -1,9 +1,11 @@
-﻿/**
+package com.cput.laundryecommercebookingsystem.service;
+
+
+/*
  * IService.java
  * Author: Snalo (230541844)
  * Date: 25 July 2026
  */
-package com.cput.laundryecommercebookingsystem.service;
 
 import java.util.List;
 

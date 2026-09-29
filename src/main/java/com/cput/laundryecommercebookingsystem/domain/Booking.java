@@ -163,8 +163,8 @@ public class Booking {
                 ", bookingDate=" + bookingDate +
                 ", status=" + status +
                 ", totalAmount=" + totalAmount +
-                ", student=" + (student != null ? student.getId() : null) +
-                ", laundryMachine=" + (laundryMachine != null ? laundryMachine.getId() : null) +
+                ", student=" + (student != null ? student.getStudentId() : null) +
+                ", laundryMachine=" + (laundryMachine != null ? laundryMachine.getMachineId() : null) +
                 ", timeSlot=" + (timeSlot != null ? timeSlot.getId() : null) +
                 ", laundryService=" + (laundryService != null ? laundryService.getId() : null) +
                 '}';

@@ -1,9 +1,10 @@
-﻿/**
+package com.cput.laundryecommercebookingsystem.domain;
+
+/*
  * LaundryService.java
  * Author: Snalo (230541844)
  * Date: 25 July 2026
  */
-package com.cput.laundryecommercebookingsystem.domain;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

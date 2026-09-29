@@ -1,9 +1,10 @@
-﻿/**
+package com.cput.laundryecommercebookingsystem.controller;
+
+/*
  * LaundryServiceController.java
  * Author: Snalo (230541844)
  * Date: 25 July 2026
  */
-package com.cput.laundryecommercebookingsystem.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

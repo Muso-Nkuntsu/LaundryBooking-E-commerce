@@ -13,7 +13,7 @@ import java.util.Optional;
  *  * 25 July 2026
  *  */
 
-public interface OrderService {
+public interface IOrderService {
 
     Order createOrder(Student student, List<OrderItem> orderItems, double totalAmount);
 

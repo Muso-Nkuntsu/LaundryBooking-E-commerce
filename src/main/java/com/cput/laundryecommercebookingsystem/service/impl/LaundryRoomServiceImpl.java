@@ -1,10 +1,10 @@
 package com.cput.laundryecommercebookingsystem.service.impl;
 
 import com.cput.laundryecommercebookingsystem.domain.LaundryRoom;
-import com.cput.laundryecommercebookingsystem.domain.Machine;
+import com.cput.laundryecommercebookingsystem.domain.LaundryMachine;
 import com.cput.laundryecommercebookingsystem.factory.LaundryRoomFactory;
-import com.cput.laundryecommercebookingsystem.repository.LaundryRoomRepository;
-import com.cput.laundryecommercebookingsystem.service.LaundryRoomService;
+import com.cput.laundryecommercebookingsystem.repository.ILaundryRoomRepository;
+import com.cput.laundryecommercebookingsystem.service.ILaundryRoomService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,10 +19,11 @@ import java.util.Optional;
  *  */
 
 @Service
-public class LaundryRoomServiceImpl implements LaundryRoomService {
-    private final LaundryRoomRepository laundryRoomRepository;
+public class LaundryRoomServiceImpl implements ILaundryRoomService {
 
-    public LaundryRoomServiceImpl(LaundryRoomRepository laundryRoomRepository) {
+    private final ILaundryRoomRepository laundryRoomRepository;
+
+    public LaundryRoomServiceImpl(ILaundryRoomRepository laundryRoomRepository) {
         this.laundryRoomRepository = laundryRoomRepository;
     }
 
@@ -59,7 +60,7 @@ public class LaundryRoomServiceImpl implements LaundryRoomService {
 
     @Override
     @Transactional
-    public LaundryRoom addMachineToRoom(int roomId, Machine machine) {
+    public LaundryRoom addMachineToRoom(int roomId, LaundryMachine machine) {
         LaundryRoom room = getRoomOrThrow(roomId);
         room.addMachine(machine);
         return laundryRoomRepository.save(room);
@@ -83,10 +84,18 @@ public class LaundryRoomServiceImpl implements LaundryRoomService {
         return laundryRoomRepository.findAll();
     }
 
+    @Override
+    @Transactional
+    public boolean deleteRoom(int roomId) {
+        if (laundryRoomRepository.existsById(roomId)) {
+            laundryRoomRepository.deleteById(roomId);
+            return true;
+        }
+        return false;
+    }
+
     private LaundryRoom getRoomOrThrow(int roomId) {
         return laundryRoomRepository.findById(roomId)
                 .orElseThrow(() -> new NoSuchElementException("LaundryRoom not found with id: " + roomId));
     }
-
-
 }

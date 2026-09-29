@@ -7,7 +7,7 @@ package com.cput.laundryecommercebookingsystem.factory;
 
 import com.cput.laundryecommercebookingsystem.factory.ProductFactory;
 import org.junit.jupiter.api.Test;
-import za.ac.cput.laundrybookingecommerce.domain.Product;
+import com.cput.laundryecommercebookingsystem.domain.Product;
 
 import static org.junit.jupiter.api.Assertions.*;
 

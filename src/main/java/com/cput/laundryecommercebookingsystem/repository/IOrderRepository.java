@@ -15,7 +15,7 @@ import java.util.List;
  *  * 25 July 2026
  *  */
 
-public interface OrderRepository extends JpaRepository<Order, Integer>{
+public interface IOrderRepository extends JpaRepository<Order, Integer>{
 
     List<Order> findByStatus(OrderStatus status);
 

@@ -12,12 +12,20 @@ import java.time.LocalDateTime;
  */
 
 public class ReviewFactory {
-    public Review create(
+
+    public static Review create(
             Student student,
             LaundryService laundryService,
             int rating,
             String comment,
             LocalDateTime date) {
+
+        if (student == null || laundryService == null) {
+            throw new IllegalArgumentException("Student and LaundryService are required");
+        }
+        if (rating < 1 || rating > 5) {
+            throw new IllegalArgumentException("Rating must be between 1 and 5");
+        }
 
         return Review.builder()
                 .student(student)
@@ -27,5 +35,13 @@ public class ReviewFactory {
                 .date(date)
                 .build();
     }
-}
 
+    public static Review create(
+            Student student,
+            LaundryService laundryService,
+            int rating,
+            String comment) {
+
+        return create(student, laundryService, rating, comment, LocalDateTime.now());
+    }
+}

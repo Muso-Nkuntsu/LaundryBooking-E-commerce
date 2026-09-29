@@ -1,7 +1,7 @@
 package com.cput.laundryecommercebookingsystem.factory;
 
 import com.cput.laundryecommercebookingsystem.domain.LaundryMachine;
-import com.cput.laundryecommercebookingsystem.domain.Laundryroom.java;
+import com.cput.laundryecommercebookingsystem.domain.LaundryRoom;
 import com.cput.laundryecommercebookingsystem.domain.enums.MachineStatus;
 
 /**

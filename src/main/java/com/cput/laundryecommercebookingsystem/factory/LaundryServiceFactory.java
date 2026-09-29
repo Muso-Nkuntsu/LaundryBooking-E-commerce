@@ -1,9 +1,9 @@
-﻿/**
+package com.cput.laundryecommercebookingsystem.factory;
+/*
  * LaundryServiceFactory.java
  * Author: Snalo (230541844)
  * Date: 25 July 2026
  */
-package com.cput.laundryecommercebookingsystem.factory;
 
 import com.cput.laundryecommercebookingsystem.domain.LaundryService;
 import java.util.UUID;

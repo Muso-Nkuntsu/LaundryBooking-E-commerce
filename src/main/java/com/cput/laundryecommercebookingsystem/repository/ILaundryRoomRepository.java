@@ -11,13 +11,12 @@ import java.util.Optional;
  *  * 230405886
  *  * 25 July 2026
  *  */
-public interface LaundryRoomRepository extends JpaRepository<LaundryRoom, Integer>{
+public interface ILaundryRoomRepository extends JpaRepository<LaundryRoom, Integer>{
 
 
     List<LaundryRoom> findByIsActive(boolean isActive);
 
     List<LaundryRoom> findByLocation(String location);
-
 
     Optional<LaundryRoom> findByRoomNumber(String roomNumber);
 }

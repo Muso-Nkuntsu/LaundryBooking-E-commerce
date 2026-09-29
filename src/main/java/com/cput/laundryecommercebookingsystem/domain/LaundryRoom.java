@@ -42,8 +42,8 @@ public class LaundryRoom {
     @Column(name = "is_active", nullable = false)
     private boolean isActive;
 
-    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Machine> machines = new ArrayList<>();
+    @OneToMany(mappedBy = "laundryRoom", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<LaundryMachine> machines = new ArrayList<>();
 
     protected LaundryRoom() {
     }
@@ -57,10 +57,36 @@ public class LaundryRoom {
         this.isActive = builder.isActive;
         this.machines = new ArrayList<>(builder.machines);
 
-        for (Machine machine : this.machines) {
-            machine.assignRoom(this);
-        }
     }
+
+    public int getRoomId() {
+        return roomId;
+    }
+
+    public String getRoomNumber() {
+        return roomNumber;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public List<LaundryMachine> getMachines() {
+        return Collections.unmodifiableList(machines);
+    }
+
 
     public void addRoom() {
         if (this.isActive) {
@@ -91,16 +117,18 @@ public class LaundryRoom {
     }
 
 
-    public void addMachine(Machine machine) {
+    public void addMachine(LaundryMachine machine) {
         if (machine == null) {
             throw new IllegalArgumentException("Machine must not be null.");
         }
         if (this.machines.size() >= this.capacity) {
             throw new IllegalStateException("Room is at full capacity.");
         }
+
         this.machines.add(machine);
-        machine.assignRoom(this);
     }
+
+
 
     @Override
     public boolean equals(Object o) {
@@ -134,7 +162,7 @@ public class LaundryRoom {
         private int capacity;
         private String description;
         private boolean isActive = false;
-        private List<Machine> machines = new ArrayList<>();
+        private List<LaundryMachine> machines = new ArrayList<>();
 
         public Builder roomId(int roomId) {
             this.roomId = roomId;
@@ -166,12 +194,12 @@ public class LaundryRoom {
             return this;
         }
 
-        public Builder machines(List<Machine> machines) {
+        public Builder machines(List<LaundryMachine> machines) {
             this.machines = new ArrayList<>(machines);
             return this;
         }
 
-        public Builder addMachine(Machine machine) {
+        public Builder addMachine(LaundryMachine machine) {
             this.machines.add(machine);
             return this;
         }

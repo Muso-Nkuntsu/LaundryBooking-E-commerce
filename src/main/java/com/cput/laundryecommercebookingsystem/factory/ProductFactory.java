@@ -1,11 +1,11 @@
-﻿/**
+/**
  * ProductFactory.java
  * Author: Snalo (230541844)
  * Date: 25 July 2026
  */
 package com.cput.laundryecommercebookingsystem.factory;
 
-import za.ac.cput.laundrybookingecommerce.domain.Product;
+import com.cput.laundryecommercebookingsystem.domain.Product;
 import java.util.UUID;
 
 /**

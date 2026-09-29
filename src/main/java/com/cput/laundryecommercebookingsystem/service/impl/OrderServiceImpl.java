@@ -5,8 +5,8 @@ import com.cput.laundryecommercebookingsystem.domain.OrderItem;
 import com.cput.laundryecommercebookingsystem.domain.Student;
 import com.cput.laundryecommercebookingsystem.domain.enums.OrderStatus;
 import com.cput.laundryecommercebookingsystem.factory.OrderFactory;
-import com.cput.laundryecommercebookingsystem.repository.OrderRepository;
-import com.cput.laundryecommercebookingsystem.service.OrderService;
+import com.cput.laundryecommercebookingsystem.repository.IOrderRepository;
+import com.cput.laundryecommercebookingsystem.service.IOrderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,17 +21,17 @@ import java.util.Optional;
  *  */
 
 @Service
-public class OrderServiceImpl implements OrderService { private final OrderRepository orderRepository;
+public class OrderServiceImpl implements IOrderService { private final IOrderRepository IOrderRepository;
 
-    public OrderServiceImpl(OrderRepository orderRepository) {
-        this.orderRepository = orderRepository;
+    public OrderServiceImpl(IOrderRepository IOrderRepository) {
+        this.IOrderRepository = IOrderRepository;
     }
 
     @Override
     @Transactional
     public Order createOrder(Student student, List<OrderItem> orderItems, double totalAmount) {
         Order order = OrderFactory.createOrder(student, orderItems, totalAmount);
-        return orderRepository.save(order);
+        return IOrderRepository.save(order);
     }
 
     @Override
@@ -39,7 +39,7 @@ public class OrderServiceImpl implements OrderService { private final OrderRepos
     public Order placeOrder(int orderId) {
         Order order = getOrderOrThrow(orderId);
         order.placeOrder();
-        return orderRepository.save(order);
+        return IOrderRepository.save(order);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class OrderServiceImpl implements OrderService { private final OrderRepos
     public Order cancelOrder(int orderId) {
         Order order = getOrderOrThrow(orderId);
         order.cancelOrder();
-        return orderRepository.save(order);
+        return IOrderRepository.save(order);
     }
 
     @Override
@@ -55,35 +55,35 @@ public class OrderServiceImpl implements OrderService { private final OrderRepos
     public Order updateOrderStatus(int orderId, OrderStatus newStatus) {
         Order order = getOrderOrThrow(orderId);
         order.updateStatus(newStatus);
-        return orderRepository.save(order);
+        return IOrderRepository.save(order);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<Order> getOrderById(int orderId) {
-        return orderRepository.findById(orderId);
+        return IOrderRepository.findById(orderId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Order> getOrdersByStatus(OrderStatus status) {
-        return orderRepository.findByStatus(status);
+        return IOrderRepository.findByStatus(status);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Order> getOrdersByStudent(int studentId) {
-        return orderRepository.findByStudentPrimaryKey(studentId);
+        return IOrderRepository.findByStudentPrimaryKey(studentId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Order> getAllOrders() {
-        return orderRepository.findAll();
+        return IOrderRepository.findAll();
     }
 
     private Order getOrderOrThrow(int orderId) {
-        return orderRepository.findById(orderId)
+        return IOrderRepository.findById(orderId)
                 .orElseThrow(() -> new NoSuchElementException("Order not found with id: " + orderId));
     }
 

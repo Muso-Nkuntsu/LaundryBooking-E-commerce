@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LaundryECommerceBookingSystemApplication.java
  * Author: Snalo (230541844)
  * Date: 25 July 2026
