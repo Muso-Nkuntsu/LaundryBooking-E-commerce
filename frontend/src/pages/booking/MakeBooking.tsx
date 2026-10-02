@@ -1,105 +1,156 @@
-import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import type { TimeSlot } from "../../types/TimeSlot";
-import { colors, radius, type } from "../../styles/Theme";
-import { formatFullDate, formatTimeRange } from "../../utilis/FormatDate";
+import type { LaundryMachine } from "../../types/booking";
 import TimeSlotSelector from "../../components/booking/TimeSlotSelector";
+import MachineDoor from "../../components/booking/MachineDoor";
+import { Loading } from "../../components/common/States";
+import { useFetch } from "../../hooks/useFetch";
+import { useToast } from "../../context/useToast";
+import { bookingService } from "../../services/bookingService";
+import { getStudentId } from "../../services/session";
+import { friendlyError } from "../../utilis/errorMessage";
+import { formatCurrency } from "../../utilis/FormatCurrency";
+import { formatFullDate, formatTimeRange } from "../../utilis/FormatDate";
 
 interface MakeBookingLocationState {
   laundryServiceId?: number;
   laundryServiceName?: string;
+  laundryServicePrice?: number;
 }
 
-const MakeBooking: React.FC = () => {
+const STEPS = ["Pick a time", "Pick a machine", "Confirm"];
+
+function MakeBooking() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { laundryServiceId, laundryServiceName } = (location.state as MakeBookingLocationState) ?? {};
+  const toast = useToast();
+  const [searchParams] = useSearchParams();
+
+  const { laundryServiceId, laundryServiceName, laundryServicePrice } = (location.state as MakeBookingLocationState | null) ?? {};
+  const roomFilter = Number(searchParams.get("roomId")) || null;
 
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const [selectedMachine, setSelectedMachine] = useState<LaundryMachine | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleConfirm = () => {
-    if (!selectedSlot) return;
-    navigate("/bookings/confirmation", {
-      state: { timeSlot: selectedSlot, laundryServiceId, laundryServiceName },
-    });
+  const machinesQuery = useFetch(() =>
+    bookingService.getAllMachines().catch((err: unknown) => {
+      throw new Error(friendlyError(err, "We couldn't load the machines."));
+    }),
+  );
+  const allMachines = machinesQuery.data ?? [];
+  const machines = roomFilter ? allMachines.filter((machine) => machine.laundryRoom?.roomId === roomFilter) : allMachines;
+
+  const total = laundryServicePrice ?? 0;
+  const step = !selectedSlot ? 0 : !selectedMachine ? 1 : 2;
+
+  const handleSlotSelect = (slot: TimeSlot) => {
+    setSelectedSlot(slot);
+    // Some time slots already belong to one machine; pick it automatically.
+    if (slot.machineId) {
+      const match = allMachines.find((machine) => machine.machineId === slot.machineId);
+      if (match) setSelectedMachine(match);
+    }
   };
 
+  const handleConfirm = async () => {
+    if (!selectedSlot || !selectedMachine) return;
+
+    try {
+      setSubmitting(true);
+      const booking = await bookingService.createBooking({
+        studentId: getStudentId(),
+        machineId: selectedMachine.machineId,
+        timeSlotId: selectedSlot.id,
+        serviceId: laundryServiceId,
+        totalAmount: total,
+      });
+      navigate("/booking-confirmation", { state: { booking } });
+    } catch (error) {
+      toast.error(friendlyError(error, "We couldn't create your booking. Try again."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const summary = !selectedSlot
+    ? "Choose a time slot to start."
+    : `${formatFullDate(selectedSlot.date)}, ${formatTimeRange(selectedSlot.startTime, selectedSlot.endTime)}${
+        selectedMachine ? `, machine ${selectedMachine.machineNumber}` : ". Now choose a machine."
+      }`;
+
   return (
-    <div style={{ maxWidth: "720px", margin: "0 auto", padding: "clamp(16px, 4vw, 32px)", boxSizing: "border-box" }}>
-      <header style={{ marginBottom: "20px" }}>
-        <h1 style={{ fontFamily: type.display, fontSize: "clamp(22px, 4vw, 28px)", color: colors.text, margin: "0 0 4px" }}>
-          Choose a time slot
-        </h1>
-        <p style={{ fontFamily: type.body, fontSize: "14px", color: colors.textMuted, margin: 0 }}>
-          Pick a date and an available slot for your laundry booking.
-        </p>
+    <div className="page">
+      <header className="page-head">
+        <div>
+          <h1>Book a machine</h1>
+          <p>Choose when you want to wash, then which machine.</p>
+        </div>
       </header>
 
+      <ol className="steps" aria-label="Booking steps">
+        {STEPS.map((label, index) => (
+          <li key={label} className={index === step ? "current" : index < step ? "done" : undefined} aria-current={index === step ? "step" : undefined}>
+            <span>{index + 1}</span>
+            {label}
+          </li>
+        ))}
+      </ol>
+
       {laundryServiceName && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "12px 16px",
-            backgroundColor: colors.accentLight,
-            borderRadius: radius.md,
-            marginBottom: "20px",
-          }}
-        >
-          <span style={{ fontFamily: type.body, fontSize: "13px", color: colors.text }}>
-            Added service: <strong>{laundryServiceName}</strong>
-          </span>
+        <div className="alert alert-info" style={{ marginBottom: 16 }}>
+          Added service: <strong>{laundryServiceName}</strong>
+          {typeof laundryServicePrice === "number" && ` (${formatCurrency(laundryServicePrice)})`}
         </div>
       )}
 
-      <TimeSlotSelector onSlotSelect={setSelectedSlot} selectedSlotId={selectedSlot?.id ?? null} />
+      <section className="card">
+        <h2 style={{ marginBottom: 14 }}>When</h2>
+        <TimeSlotSelector onSlotSelect={handleSlotSelect} selectedSlotId={selectedSlot?.id ?? null} />
+      </section>
 
-      <div
-        style={{
-          position: "sticky",
-          bottom: 0,
-          marginTop: "24px",
-          paddingTop: "16px",
-          borderTop: `1px solid ${colors.border}`,
-          backgroundColor: colors.bg,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "12px",
-        }}
-      >
-        <span style={{ fontFamily: type.body, fontSize: "13px", color: colors.textMuted }}>
-          {selectedSlot
-            ? `Selected: ${formatFullDate(selectedSlot.date)}, ${formatTimeRange(
-                selectedSlot.startTime,
-                selectedSlot.endTime
-              )}`
-            : "No time slot selected yet"}
+      <section className="card">
+        <h2>Which machine</h2>
+        <p className="muted small" style={{ margin: "4px 0 16px" }}>
+          {roomFilter ? "Showing machines in the room you chose." : "Machines from every laundry room."}
+        </p>
+
+        {machinesQuery.loading && <Loading message="Loading machines..." />}
+        {!machinesQuery.loading && machinesQuery.error && (
+          <div className="alert alert-error row" role="alert">
+            {machinesQuery.error}
+            <button type="button" className="link-btn" onClick={machinesQuery.reload}>Try again</button>
+          </div>
+        )}
+        {!machinesQuery.loading && !machinesQuery.error && machines.length === 0 && (
+          <p className="muted">No machines found{roomFilter ? " in this room" : ""}.</p>
+        )}
+        {machines.length > 0 && (
+          <div className="machines">
+            {machines.map((machine) => (
+              <MachineDoor
+                key={machine.machineId}
+                machine={machine}
+                selected={selectedMachine?.machineId === machine.machineId}
+                onSelect={setSelectedMachine}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <div className="sticky-bar">
+        <span className="small" aria-live="polite">
+          {summary}
+          {total > 0 && <strong> Total {formatCurrency(total)}.</strong>}
         </span>
-
-        <button
-          type="button"
-          disabled={!selectedSlot}
-          onClick={handleConfirm}
-          style={{
-            padding: "12px 26px",
-            borderRadius: radius.pill,
-            border: "none",
-            backgroundColor: selectedSlot ? colors.primary : colors.unavailableBg,
-            color: selectedSlot ? colors.surface : colors.unavailableText,
-            fontFamily: type.body,
-            fontSize: "14px",
-            fontWeight: 700,
-            cursor: selectedSlot ? "pointer" : "not-allowed",
-          }}
-        >
-          Continue to confirmation
+        <button type="button" className="btn btn-primary" disabled={!selectedSlot || !selectedMachine || submitting} onClick={handleConfirm}>
+          {submitting ? "Booking..." : "Confirm booking"}
         </button>
       </div>
     </div>
   );
-};
+}
 
 export default MakeBooking;

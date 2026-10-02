@@ -1,4 +1,4 @@
-import { apiGet } from "./api";
+import { apiGet } from "./Api";
 import type { TimeSlot } from "../types/TimeSlot";
 
 export const timeSlotService = {

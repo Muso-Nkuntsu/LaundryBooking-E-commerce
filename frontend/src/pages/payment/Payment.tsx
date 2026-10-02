@@ -1,117 +1,140 @@
 import { useState } from "react";
-import type { FormEvent} from "react";
+import type { FormEvent } from "react";
+import { Link, useLocation } from "react-router-dom";
+import TextField from "../../components/common/TextField";
+import Icon from "../../components/common/Icon";
+import { formatCurrency } from "../../utilis/FormatCurrency";
+
+type Method = "card" | "eft";
+
+function formatCardNumber(raw: string): string {
+  return raw.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
+}
+
+function formatExpiry(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 4);
+  return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
+}
 
 function Payment() {
-  const [paymentMethod, setPaymentMethod] = useState("");
+  const location = useLocation();
+  const state = (location.state ?? {}) as { amount?: number; description?: string };
+  const amount = typeof state.amount === "number" ? state.amount : 0;
+
+  const [method, setMethod] = useState<Method>("card");
   const [cardNumber, setCardNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [cvv, setCvv] = useState("");
-  const [message, setMessage] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [paid, setPaid] = useState(false);
 
-  const amount = 0.00;
+  const errors: { cardNumber?: string; expiryDate?: string; cvv?: string } = {};
+  if (method === "card") {
+    if (cardNumber.replace(/\s/g, "").length < 13) errors.cardNumber = "Enter the full card number.";
+    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiryDate)) errors.expiryDate = "Use the format MM/YY.";
+    if (!/^\d{3,4}$/.test(cvv)) errors.cvv = "Enter the 3 digits on the back of the card.";
+  }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitted(true);
+    if (Object.keys(errors).length > 0) return;
 
-    setMessage("");
-    setSuccess(false);
-
-    if (!paymentMethod) {
-      setMessage("Please select a payment method.");
-      return;
-    }
-
-    if (!cardNumber || !expiryDate || !cvv) {
-      setMessage("Please complete all payment information.");
-      return;
-    }
-
-    setSuccess(true);
-    setMessage("Payment submitted successfully.");
+    // No payment gateway is connected yet, so nothing is charged here.
+    setPaid(true);
   };
 
-  return (
-    <div>
-      <h1>Payment</h1>
+  if (paid) {
+    return (
+      <div className="page narrow">
+        <div className="card state">
+          <span className="tick"><Icon name="check" size={36} /></span>
+          <h1>Payment submitted</h1>
+          <p>{formatCurrency(amount)} by {method === "card" ? "card" : "EFT"}. You'll get a notification once it is confirmed.</p>
+          <div className="btn-row">
+            <Link to="/my-bookings" className="btn btn-primary">View my bookings</Link>
+            <Link to="/dashboard" className="btn btn-ghost">Back to home</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-      <section>
-        <h2>Order Summary</h2>
-        <p>Amount Due: R{amount.toFixed(2)}</p>
+  return (
+    <div className="page narrow">
+      <header className="page-head">
+        <div>
+          <h1>Payment</h1>
+          <p>Choose how you want to pay.</p>
+        </div>
+      </header>
+
+      <section className="card row">
+        <div>
+          <span className="muted small">Amount due</span>
+          <div className="price">{formatCurrency(amount)}</div>
+        </div>
+        {state.description && <span className="muted">{state.description}</span>}
       </section>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="paymentMethod">Payment Method</label>
-          <br />
-          <select
-            id="paymentMethod"
-            value={paymentMethod}
-            onChange={(event) => setPaymentMethod(event.target.value)}
-          >
-            <option value="">Select payment method</option>
-            <option value="card">Card</option>
-            <option value="eft">EFT</option>
-          </select>
-        </div>
+      <form className="card stack" onSubmit={handleSubmit} noValidate>
+        <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+          <legend style={{ fontWeight: 600, marginBottom: 8, padding: 0 }}>Payment method</legend>
+          <div className="choice-row">
+            {(["card", "eft"] as const).map((option) => (
+              <label key={option} className={`choice ${method === option ? "selected" : ""}`}>
+                <input type="radio" name="method" value={option} checked={method === option} onChange={() => setMethod(option)} />
+                {option === "card" ? "Card" : "EFT"}
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
-        <br />
+        {method === "card" ? (
+          <div className="form-grid">
+            <TextField
+              className="span-2"
+              id="cardNumber"
+              label="Card number"
+              inputMode="numeric"
+              autoComplete="cc-number"
+              placeholder="1234 5678 9012 3456"
+              value={cardNumber}
+              onChange={(value) => setCardNumber(formatCardNumber(value))}
+              error={submitted ? errors.cardNumber : undefined}
+            />
+            <TextField
+              id="expiryDate"
+              label="Expiry date"
+              inputMode="numeric"
+              autoComplete="cc-exp"
+              placeholder="MM/YY"
+              value={expiryDate}
+              onChange={(value) => setExpiryDate(formatExpiry(value))}
+              error={submitted ? errors.expiryDate : undefined}
+            />
+            <TextField
+              id="cvv"
+              label="CVV"
+              type="password"
+              inputMode="numeric"
+              autoComplete="cc-csc"
+              maxLength={4}
+              value={cvv}
+              onChange={(value) => setCvv(value.replace(/\D/g, ""))}
+              error={submitted ? errors.cvv : undefined}
+            />
+          </div>
+        ) : (
+          <div className="alert alert-info">
+            Pay by EFT from your banking app, then submit here so we know to expect it.
+          </div>
+        )}
 
-        <div>
-          <label htmlFor="cardNumber">Card Number</label>
-          <br />
-          <input
-            id="cardNumber"
-            type="text"
-            value={cardNumber}
-            onChange={(event) => setCardNumber(event.target.value)}
-            placeholder="Enter card number"
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label htmlFor="expiryDate">Expiry Date</label>
-          <br />
-          <input
-            id="expiryDate"
-            type="text"
-            value={expiryDate}
-            onChange={(event) => setExpiryDate(event.target.value)}
-            placeholder="MM/YY"
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label htmlFor="cvv">CVV</label>
-          <br />
-          <input
-            id="cvv"
-            type="password"
-            value={cvv}
-            onChange={(event) => setCvv(event.target.value)}
-            placeholder="Enter CVV"
-          />
-        </div>
-
-        <br />
-
-        {message && <p>{message}</p>}
-
-        <button type="submit">
-          Submit Payment
+        <button type="submit" className="btn btn-primary btn-block">
+          Pay {formatCurrency(amount)}
         </button>
       </form>
-
-      {success && (
-        <section>
-          <h2>Payment Successful</h2>
-          <p>Your payment has been submitted successfully.</p>
-        </section>
-      )}
     </div>
   );
 }

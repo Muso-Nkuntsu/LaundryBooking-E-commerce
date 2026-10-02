@@ -1,69 +1,79 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { Product } from "../../types/Product";
+import { ErrorState, Loading } from "../../components/common/States";
+import Icon from "../../components/common/Icon";
+import { useFetch } from "../../hooks/useFetch";
+import { useToast } from "../../context/useToast";
 import { getProductById } from "../../services/productService";
+import { friendlyError } from "../../utilis/errorMessage";
+import { formatCurrency } from "../../utilis/FormatCurrency";
 
 function ProductDetails() {
   const { productId } = useParams();
-  const [product, setProduct] = useState<Product | null>(null);
+  const toast = useToast();
   const [quantity, setQuantity] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
 
-  useEffect(() => {
-    if (!productId) {
-      setError("Product not found.");
-      setLoading(false);
-      return;
+  const { data: product, loading, error, reload } = useFetch(async () => {
+    if (!productId) throw new Error("Product not found.");
+    try {
+      return await getProductById(productId);
+    } catch (err) {
+      throw new Error(friendlyError(err, "We couldn't load this product."));
     }
-    getProductById(productId)
-      .then(setProduct)
-      .catch(() => setError("Unable to load this product."))
-      .finally(() => setLoading(false));
-  }, [productId]);
+  }, productId ?? "");
+
+  const back = (
+    <Link className="back" to="/products"><Icon name="arrowLeft" size={18} /> Shop</Link>
+  );
+
+  if (loading) return <div className="page"><Loading message="Loading product..." /></div>;
+  if (error || !product) {
+    return (
+      <div className="page">
+        {back}
+        <ErrorState message={error ?? "Product not found."} onRetry={reload} />
+      </div>
+    );
+  }
+
+  const stock = product.inventoryQuantity;
+  const inStock = stock > 0;
 
   const handleAdd = () => {
-    if (!product || product.inventoryQuantity <= 0) return;
-    product
-   quantity;
-    setMessage(`${quantity} × ${product.name} added to your cart.`);
+    if (!inStock) return;
+    // The cart isn't connected to the backend yet; this only confirms the click.
+    toast.success(`${quantity} × ${product.name} added to your cart.`);
   };
 
-  if (loading) return <main className="page-shell"><div className="state-card">Loading product...</div></main>;
-  if (error || !product) return <main className="page-shell"><div className="state-card error">{error || "Product not found."}</div></main>;
-
   return (
-    <main className="page-shell">
-      <Link className="back-link" to="/products">← Back to products</Link>
-      <section className="product-detail">
-        <div className="product-image large">Laundry Product</div>
-        <div>
-          <span className="category-label">{product.category || "Laundry"}</span>
+    <div className="page">
+      {back}
+      <section className="card grid grid-2" style={{ gap: 28 }}>
+        <div className="product-art big" aria-hidden="true"><Icon name="bag" size={80} /></div>
+        <div className="stack">
+          <span className="muted small">{product.category || "Laundry"}</span>
           <h1>{product.name}</h1>
-          <p className="product-description">{product.description || "Laundry product for student use."}</p>
-          <div className="price large-price">R{product.price.toFixed(2)}</div>
-          <p className={product.inventoryQuantity > 0 ? "available-text" : "unavailable-text"}>
-            {product.inventoryQuantity > 0 ? `${product.inventoryQuantity} available` : "Out of stock"}
-          </p>
-          <label className="quantity-label" htmlFor="quantity">Quantity</label>
-          <input
-            id="quantity"
-            className="quantity-input"
-            type="number"
-            min="1"
-            max={Math.max(product.inventoryQuantity, 1)}
-            disabled={product.inventoryQuantity <= 0}
-            value={quantity}
-            onChange={(event) => setQuantity(Math.min(Math.max(Number(event.target.value) || 1, 1), product.inventoryQuantity))}
-          />
-          <button className="primary-button" disabled={product.inventoryQuantity <= 0} onClick={handleAdd}>
-            Add to Cart
+          <p className="muted">{product.description || "Laundry product for student use."}</p>
+          <div className="row" style={{ justifyContent: "flex-start", gap: 16 }}>
+            <span className="price" style={{ fontSize: "2rem" }}>{formatCurrency(product.price)}</span>
+            <span className={`pill ${inStock ? "pill-ok" : "pill-bad"}`}>{inStock ? `${stock} available` : "Out of stock"}</span>
+          </div>
+
+          <div>
+            <span id="quantity-label" style={{ fontWeight: 600, display: "block", marginBottom: 8 }}>Quantity</span>
+            <div className="stepper" role="group" aria-labelledby="quantity-label">
+              <button type="button" aria-label="One fewer" disabled={!inStock || quantity <= 1} onClick={() => setQuantity((q) => Math.max(q - 1, 1))}>−</button>
+              <output aria-live="polite">{quantity}</output>
+              <button type="button" aria-label="One more" disabled={!inStock || quantity >= stock} onClick={() => setQuantity((q) => Math.min(q + 1, stock))}>+</button>
+            </div>
+          </div>
+
+          <button type="button" className="btn btn-primary" disabled={!inStock} onClick={handleAdd}>
+            Add to cart, {formatCurrency(product.price * quantity)}
           </button>
-          {message && <p className="success-message">{message}</p>}
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 

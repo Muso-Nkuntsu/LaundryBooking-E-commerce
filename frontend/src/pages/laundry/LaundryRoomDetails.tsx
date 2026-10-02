@@ -1,86 +1,76 @@
-import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { LaundryRoom } from "../../types/LaundryRoom";
+import { ErrorState, Loading } from "../../components/common/States";
+import Icon from "../../components/common/Icon";
+import MachineDoor from "../../components/booking/MachineDoor";
+import { isMachineAvailable } from "../../utilis/machine";
+import { useFetch } from "../../hooks/useFetch";
 import { getLaundryRoomById } from "../../services/laundryRoomService";
-import { getAllLaundryMachines, type LaundryMachine } from "../../services/laundryMachineService";
+import { getAllLaundryMachines } from "../../services/laundryMachineService";
+import { friendlyError } from "../../utilis/errorMessage";
 
 function LaundryRoomDetails() {
   const { roomId } = useParams();
-  const [room, setRoom] = useState<LaundryRoom | null>(null);
-  const [machines, setMachines] = useState<LaundryMachine[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const id = Number(roomId);
 
-  useEffect(() => {
-    const id = Number(roomId);
-    if (!Number.isInteger(id)) {
-      setError("Invalid laundry room.");
-      setLoading(false);
-      return;
+  const { data, loading, error, reload } = useFetch(async () => {
+    if (!Number.isInteger(id)) throw new Error("That laundry room doesn't exist.");
+    try {
+      const [room, allMachines] = await Promise.all([getLaundryRoomById(id), getAllLaundryMachines()]);
+      return { room, machines: allMachines.filter((machine) => machine.laundryRoom?.roomId === id) };
+    } catch (err) {
+      throw new Error(friendlyError(err, "We couldn't load this laundry room."));
     }
+  }, id);
 
-    Promise.all([getLaundryRoomById(id), getAllLaundryMachines()])
-      .then(([loadedRoom, allMachines]) => {
-        setRoom(loadedRoom);
-        setMachines(allMachines.filter((machine) => machine.laundryRoom?.roomId === id));
-      })
-      .catch(() => setError("Unable to load this laundry room."))
-      .finally(() => setLoading(false));
-  }, [roomId]);
+  if (loading) return <div className="page"><Loading message="Loading room..." /></div>;
+  if (error || !data) {
+    return (
+      <div className="page">
+        <Link className="back" to="/laundry-rooms"><Icon name="arrowLeft" size={18} /> Laundry rooms</Link>
+        <ErrorState message={error ?? "Room not found."} onRetry={reload} />
+      </div>
+    );
+  }
 
-  const available = useMemo(
-    () => machines.filter((machine) => machine.status === "AVAILABLE").length,
-    [machines],
-  );
-
-  if (loading) return <main className="page-shell"><div className="state-card">Loading room...</div></main>;
-  if (error || !room) return <main className="page-shell"><div className="state-card error">{error || "Room not found."}</div></main>;
+  const { room, machines } = data;
+  const available = machines.filter(isMachineAvailable).length;
 
   return (
-    <main className="page-shell">
-      <Link className="back-link" to="/laundry-rooms">← Back to laundry rooms</Link>
-      <div className="detail-header">
+    <div className="page">
+      <Link className="back" to="/laundry-rooms"><Icon name="arrowLeft" size={18} /> Laundry rooms</Link>
+
+      <header className="page-head">
         <div>
-          <p className="eyebrow">LAUNDRY ROOM</p>
           <h1>{room.roomNumber}</h1>
           <p>{room.location}</p>
         </div>
-        <span className={`status-pill ${room.isActive ? "available" : "unavailable"}`}>
-          {room.isActive ? "ACTIVE" : "INACTIVE"}
-        </span>
-      </div>
+        <span className={`pill ${room.isActive ? "pill-ok" : "pill-off"}`}>{room.isActive ? "Open" : "Closed"}</span>
+      </header>
 
-      <section className="summary-grid">
-        <div className="summary-card"><strong>{machines.length}</strong><span>Total machines</span></div>
-        <div className="summary-card"><strong>{available}</strong><span>Available now</span></div>
-        <div className="summary-card"><strong>{Math.max(machines.length - available, 0)}</strong><span>Currently unavailable</span></div>
+      <section className="grid grid-3" style={{ marginBottom: 16 }}>
+        <div className="card"><div className="price">{machines.length}</div><span className="muted">Machines</span></div>
+        <div className="card"><div className="price" style={{ color: "var(--leaf)" }}>{available}</div><span className="muted">Free now</span></div>
+        <div className="card"><div className="price">{machines.length - available}</div><span className="muted">In use or unavailable</span></div>
       </section>
 
-      <section className="panel">
-        <h2>Machines</h2>
+      <section className="card">
+        <div className="row" style={{ marginBottom: 16 }}>
+          <h2>Machines</h2>
+          <Link className="btn btn-primary btn-sm" to={`/make-booking?roomId=${room.roomId}`}>
+            Book in this room
+          </Link>
+        </div>
         {machines.length === 0 ? (
-          <p className="muted">No machines are currently assigned to this room.</p>
+          <p className="muted">No machines are assigned to this room yet.</p>
         ) : (
-          <div className="machine-list">
+          <div className="machines">
             {machines.map((machine) => (
-              <div className="machine-row" key={machine.machineId}>
-                <div>
-                  <strong>{machine.machineNumber}</strong>
-                  <span>{machine.type}</span>
-                </div>
-                <span className={`status-pill ${machine.status === "AVAILABLE" ? "available" : "unavailable"}`}>
-                  {machine.status}
-                </span>
-              </div>
+              <MachineDoor key={machine.machineId} machine={machine} />
             ))}
           </div>
         )}
       </section>
-
-      <Link className="primary-button" to={`/laundry-machines?roomId=${room.roomId}`}>
-        Browse Machines
-      </Link>
-    </main>
+    </div>
   );
 }
 

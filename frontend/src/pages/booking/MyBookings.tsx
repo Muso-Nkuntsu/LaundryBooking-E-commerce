@@ -1,198 +1,150 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-
-import { bookingService } from "../../services/bookingService";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import type { Booking } from "../../types/booking";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import { EmptyState, ErrorState, Loading } from "../../components/common/States";
+import { useFetch } from "../../hooks/useFetch";
+import { useToast } from "../../context/useToast";
+import { bookingService } from "../../services/bookingService";
+import { getStudentId } from "../../services/session";
+import { friendlyError } from "../../utilis/errorMessage";
+import { formatCurrency } from "../../utilis/FormatCurrency";
+import { formatDayNumber, formatMonth } from "../../utilis/FormatDate";
+import { STATUS_LABEL, STATUS_PILL, bookingDate, bookingPlace, bookingTime, byDateAscending, isUpcoming } from "../../utilis/bookingDisplay";
+
+type Filter = "upcoming" | "past" | "cancelled" | "all";
+
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: "upcoming", label: "Upcoming" },
+  { id: "past", label: "Past" },
+  { id: "cancelled", label: "Cancelled" },
+  { id: "all", label: "All" },
+];
+
+function matches(booking: Booking, filter: Filter): boolean {
+  if (filter === "all") return true;
+  if (filter === "cancelled") return booking.status === "CANCELLED";
+  if (filter === "upcoming") return isUpcoming(booking);
+  return !isUpcoming(booking) && booking.status !== "CANCELLED";
+}
 
 function MyBookings() {
-  const navigate = useNavigate();
+  const toast = useToast();
+  const studentId = getStudentId();
 
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, loading, error, reload } = useFetch(
+    () =>
+      bookingService.getBookingsByStudent(studentId).catch((err: unknown) => {
+        throw new Error(friendlyError(err, "We couldn't load your bookings."));
+      }),
+    studentId,
+  );
 
-  // Temporary student ID
-  const studentId = 1;
+  const [filter, setFilter] = useState<Filter>("upcoming");
+  const [toCancel, setToCancel] = useState<Booking | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
+  const bookings = (data ?? []).slice().sort(byDateAscending);
+  const visible = bookings.filter((booking) => matches(booking, filter));
 
-  const loadBookings = async () => {
+  const handleCancel = async () => {
+    if (!toCancel) return;
     try {
-      setLoading(true);
-      setError(null);
-
-      const data =
-        await bookingService.getBookingsByStudent(studentId);
-
-      setBookings(data);
-
-    } catch (error) {
-
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to load bookings"
-      );
-
+      setCancelling(true);
+      await bookingService.cancelBooking(toCancel.id);
+      toast.success(`Booking #${toCancel.id} cancelled.`);
+      setToCancel(null);
+      reload();
+    } catch (err) {
+      toast.error(friendlyError(err, "We couldn't cancel that booking. Try again."));
     } finally {
-      setLoading(false);
+      setCancelling(false);
     }
   };
-
-
-  useEffect(() => {
-    loadBookings();
-  }, []);
-
-
-  const handleCancelBooking = async (
-    bookingId: number
-  ) => {
-
-    const confirmed = window.confirm(
-      "Are you sure you want to cancel this booking?"
-    );
-
-    if (!confirmed) return;
-
-    try {
-
-      await bookingService.cancelBooking(bookingId);
-
-      // Reload bookings after cancellation
-      await loadBookings();
-
-    } catch (error) {
-
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to cancel booking"
-      );
-    }
-  };
-
-
-  if (loading) {
-    return (
-      <div>
-        <h1>My Bookings</h1>
-        <p>Loading bookings...</p>
-      </div>
-    );
-  }
-
 
   return (
-    <div>
-
-      <h1>My Bookings</h1>
-
-      <button onClick={() => navigate("/make-booking")}>
-        Make a New Booking
-      </button>
-
-
-      {error && (
-        <p>
-          {error}
-        </p>
-      )}
-
-
-      {bookings.length === 0 ? (
-
-        <p>You currently have no bookings.</p>
-
-      ) : (
-
+    <div className="page">
+      <header className="page-head">
         <div>
-
-          {bookings.map((booking) => {
-
-            const room =
-              booking.laundryMachine?.laundryRoom;
-
-            const machine =
-              booking.laundryMachine;
-
-            const timeSlot =
-              booking.timeSlot;
-
-            return (
-
-              <div
-                key={booking.id}
-                style={{
-                  border: "1px solid #ccc",
-                  padding: "15px",
-                  marginTop: "15px",
-                }}
-              >
-
-                <h3>
-                  Booking #{booking.id}
-                </h3>
-
-                <p>
-                  <strong>Status:</strong>{" "}
-                  {booking.status}
-                </p>
-
-                <p>
-                  <strong>Room:</strong>{" "}
-                  {room
-                    ? `${room.roomNumber} - ${room.location}`
-                    : "Not available"}
-                </p>
-
-                <p>
-                  <strong>Machine:</strong>{" "}
-                  {machine?.machineNumber ||
-                    "Not available"}
-                </p>
-
-                <p>
-                  <strong>Date:</strong>{" "}
-                  {timeSlot?.date ||
-                    "Not available"}
-                </p>
-
-                <p>
-                  <strong>Time:</strong>{" "}
-                  {timeSlot
-                    ? `${timeSlot.startTime} - ${timeSlot.endTime}`
-                    : "Not available"}
-                </p>
-
-                <p>
-                  <strong>Total:</strong>{" "}
-                  R{booking.totalAmount.toFixed(2)}
-                </p>
-
-
-                {/* Only allow cancellation if confirmed */}
-
-                {booking.status === "CONFIRMED" && (
-
-                  <button
-                    onClick={() =>
-                      handleCancelBooking(
-                        booking.id
-                      )
-                    }
-                  >
-                    Cancel Booking
-                  </button>
-
-                )}
-
-              </div>
-            );
-          })}
-
+          <h1>My bookings</h1>
+          <p>Everything you've booked, with the option to cancel what's still ahead.</p>
         </div>
+        <Link to="/make-booking" className="btn btn-primary">Book a machine</Link>
+      </header>
+
+      {loading && <Loading message="Loading your bookings..." />}
+      {!loading && error && <ErrorState message={error} onRetry={reload} />}
+
+      {!loading && !error && bookings.length === 0 && (
+        <EmptyState
+          title="No bookings yet"
+          message="Book a machine and it will show up here."
+          action={<Link to="/make-booking" className="btn btn-primary">Book a machine</Link>}
+        />
       )}
 
+      {!loading && !error && bookings.length > 0 && (
+        <>
+          <div className="segmented" role="group" aria-label="Filter bookings" style={{ marginBottom: 18 }}>
+            {FILTERS.map((option) => (
+              <button key={option.id} type="button" aria-pressed={filter === option.id} onClick={() => setFilter(option.id)}>
+                {option.label} ({bookings.filter((booking) => matches(booking, option.id)).length})
+              </button>
+            ))}
+          </div>
+
+          {visible.length === 0 ? (
+            <p className="muted">No bookings in this view.</p>
+          ) : (
+            <div className="stack">
+              {visible.map((booking) => {
+                const date = booking.timeSlot?.date;
+                return (
+                  <article key={booking.id} className="card booking" style={{ margin: 0 }}>
+                    <div className="datechip" aria-hidden="true">
+                      {date ? (
+                        <>
+                          {formatMonth(date)}
+                          <b>{formatDayNumber(date)}</b>
+                        </>
+                      ) : (
+                        <b>?</b>
+                      )}
+                    </div>
+                    <div>
+                      <div className="row" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
+                        <h3>{bookingDate(booking)}</h3>
+                        <span className={STATUS_PILL[booking.status] ?? "pill pill-off"}>{STATUS_LABEL[booking.status] ?? booking.status}</span>
+                      </div>
+                      <p className="muted">{bookingTime(booking)}, {bookingPlace(booking)}</p>
+                      <p className="small muted">Booking #{booking.id}, {formatCurrency(booking.totalAmount ?? 0)}</p>
+                    </div>
+                    <div className="booking-actions">
+                      {/* Only allow cancellation if confirmed */}
+                      {booking.status === "CONFIRMED" && (
+                        <button type="button" className="btn btn-danger btn-sm" onClick={() => setToCancel(booking)}>
+                          Cancel booking
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {toCancel && (
+        <ConfirmDialog
+          title="Cancel this booking?"
+          message={`${bookingDate(toCancel)}, ${bookingTime(toCancel)}. The slot goes back to other students.`}
+          confirmLabel="Cancel booking"
+          busy={cancelling}
+          onConfirm={handleCancel}
+          onCancel={() => setToCancel(null)}
+        />
+      )}
     </div>
   );
 }

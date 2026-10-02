@@ -1,94 +1,62 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import type { Booking } from "../../types/booking";
+import { EmptyState } from "../../components/common/States";
+import Icon from "../../components/common/Icon";
+import { formatCurrency } from "../../utilis/FormatCurrency";
+import { STATUS_LABEL, STATUS_PILL, bookingDate, bookingTime } from "../../utilis/bookingDisplay";
 
 function BookingConfirmation() {
   const location = useLocation();
-  const navigate = useNavigate();
-
-  const booking = location.state?.booking as Booking | undefined;
+  const booking = (location.state as { booking?: Booking } | null)?.booking;
 
   // Prevent direct access without a booking
   if (!booking) {
     return (
-      <div>
-        <h1>No Booking Found</h1>
-
-        <p>
-          There is no booking information available.
-        </p>
-
-        <button onClick={() => navigate("/make-booking")}>
-          Make a Booking
-        </button>
+      <div className="page narrow">
+        <EmptyState
+          title="No booking to show"
+          message="This page appears right after you book. Start a new booking to see it."
+          action={<Link to="/make-booking" className="btn btn-primary">Book a machine</Link>}
+        />
       </div>
     );
   }
 
-  const room = booking.laundryMachine?.laundryRoom;
   const machine = booking.laundryMachine;
-  const timeSlot = booking.timeSlot;
+  const room = machine?.laundryRoom;
 
   return (
-    <div>
-      <h1>Booking Confirmed!</h1>
+    <div className="page narrow">
+      <div className="state" style={{ paddingTop: 8, paddingBottom: 24 }}>
+        <span className="tick"><Icon name="check" size={36} /></span>
+        <h1>You're booked</h1>
+        <p>{bookingDate(booking)}, {bookingTime(booking)}</p>
+      </div>
 
-      <p>
-        Your laundry booking has been successfully created.
-      </p>
+      <section className="card">
+        <dl className="dl">
+          <dt>Booking number</dt>
+          <dd>#{booking.id}</dd>
+          <dt>Laundry room</dt>
+          <dd>{room ? `${room.roomNumber}, ${room.location}` : "Not set"}</dd>
+          <dt>Machine</dt>
+          <dd>{machine ? `${machine.machineNumber} (${machine.type})` : "Not set"}</dd>
+          <dt>Status</dt>
+          <dd><span className={STATUS_PILL[booking.status] ?? "pill pill-off"} style={{ marginLeft: "auto" }}>{STATUS_LABEL[booking.status] ?? booking.status}</span></dd>
+          <dt>Total</dt>
+          <dd>{formatCurrency(booking.totalAmount ?? 0)}</dd>
+        </dl>
+      </section>
 
-      <hr />
-
-      <h2>Booking Details</h2>
-
-      <p>
-        <strong>Booking ID:</strong> {booking.id}
-      </p>
-
-      <p>
-        <strong>Laundry Room:</strong>{" "}
-        {room
-          ? `${room.roomNumber} - ${room.location}`
-          : "Not available"}
-      </p>
-
-      <p>
-        <strong>Machine:</strong>{" "}
-        {machine
-          ? `${machine.machineNumber} (${machine.type})`
-          : "Not available"}
-      </p>
-
-      <p>
-        <strong>Date:</strong>{" "}
-        {timeSlot?.date || "Not available"}
-      </p>
-
-      <p>
-        <strong>Time Slot:</strong>{" "}
-        {timeSlot
-          ? `${timeSlot.startTime} - ${timeSlot.endTime}`
-          : "Not available"}
-      </p>
-
-      <p>
-        <strong>Status:</strong>{" "}
-        {booking.status}
-      </p>
-
-      <p>
-        <strong>Total Amount:</strong>{" "}
-        R{booking.totalAmount.toFixed(2)}
-      </p>
-
-      <hr />
-
-      <button onClick={() => navigate("/my-bookings")}>
-        View My Bookings
-      </button>
-
-      <button onClick={() => navigate("/make-booking")}>
-        Make Another Booking
-      </button>
+      <div className="btn-row" style={{ marginTop: 18 }}>
+        <Link to="/my-bookings" className="btn btn-primary">View my bookings</Link>
+        {booking.totalAmount > 0 && (
+          <Link to="/payment" state={{ amount: booking.totalAmount, description: `Booking #${booking.id}` }} className="btn btn-sun">
+            Pay now
+          </Link>
+        )}
+        <Link to="/make-booking" className="btn btn-ghost">Book another</Link>
+      </div>
     </div>
   );
 }

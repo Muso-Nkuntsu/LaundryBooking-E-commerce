@@ -12,7 +12,7 @@ export const createStudent = async(studentData:
 
     }) =>{
          const response = await axios.post(
-            '${API_URL}/create', 
+            `${API_URL}/create`, 
             studentData
         );
     return response.data;

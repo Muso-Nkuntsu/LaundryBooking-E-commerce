@@ -1,5 +1,9 @@
 import React from "react";
+import type { ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
+import AppLayout from "../components/layout/AppLayout";
+import { ToastProvider } from "../context/ToastProvider";
 
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
@@ -15,54 +19,58 @@ import ServiceDetails from "../pages/laundry/ServiceDetails";
 import Products from "../pages/products/Products";
 import ProductDetails from "../pages/products/ProductDetails";
 
-
 import MakeBooking from "../pages/booking/MakeBooking";
 import BookingConfirmation from "../pages/booking/BookingConfirmation";
 import MyBookings from "../pages/booking/MyBookings";
 
 import OrderItems from "../pages/orders/OrderItems";
+import NotificationsPage from "../pages/notifications/NotificationPage";
+import ReviewsPage from "../pages/reviews/ReviewPage";
 
+// Wraps a signed-in page in the navigation bar.
+const withNav = (page: ReactNode) => <AppLayout>{page}</AppLayout>;
 
 const AppRoutes: React.FC = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        {/*Main Pages */}
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/payment" element={<Payment />} />
+          {/* Main pages */}
+          <Route path="/dashboard" element={withNav(<Dashboard />)} />
+          <Route path="/profile" element={withNav(<Profile />)} />
+          <Route path="/payment" element={withNav(<Payment />)} />
+          <Route path="/notifications" element={withNav(<NotificationsPage />)} />
+          <Route path="/reviews" element={withNav(<ReviewsPage />)} />
 
-         {/**Laundry Rooms */}
-        <Route path="/laundry-rooms" element={<LaundryRooms />} />
-        <Route path="/laundry-rooms/:roomId" element={<LaundryRoomDetails />} />
+          {/* Laundry rooms */}
+          <Route path="/laundry-rooms" element={withNav(<LaundryRooms />)} />
+          <Route path="/laundry-rooms/:roomId" element={withNav(<LaundryRoomDetails />)} />
 
+          {/* Laundry services */}
+          <Route path="/laundry" element={withNav(<LaundryServices />)} />
+          <Route path="/laundry/:id" element={withNav(<ServiceDetails />)} />
 
-         {/*Laundry Machines*/}
-        <Route path="/laundry" element={<LaundryServices />} />
-        <Route path="/laundry/:id" element={<ServiceDetails />} />
+          {/* Products */}
+          <Route path="/products" element={withNav(<Products />)} />
+          <Route path="/products/:productId" element={withNav(<ProductDetails />)} />
 
-        <Route path="/bookings/create" element={<MakeBooking />} />
+          {/* Booking */}
+          <Route path="/make-booking" element={withNav(<MakeBooking />)} />
+          <Route path="/bookings/create" element={withNav(<MakeBooking />)} />
+          <Route path="/booking-confirmation" element={withNav(<BookingConfirmation />)} />
+          <Route path="/my-bookings" element={withNav(<MyBookings />)} />
 
-         {/**Products */}
-        <Route path="/products" element={<Products />} />
-        <Route path="/products/:productId" element={<ProductDetails />}/>
+          {/* Orders */}
+          <Route path="/order-items" element={withNav(<OrderItems />)} />
 
-        
-        {/*Booking */}
-        <Route path = "/make-booking" element ={<MakeBooking/>}/>
-        <Route path="/booking-confirmation" element ={<BookingConfirmation/>}/>
-        <Route path="/my-bookings" element ={<MyBookings/>}/>
-
-         {/* Orders */}
-        <Route path="/order-items" element ={<OrderItems/>}/>
-
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </BrowserRouter>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 };
 

@@ -1,30 +1,17 @@
-import type { BookingStatus, LaundryMachine } from "./booking";
-
-export interface TimeSlot {
-  id: number;
-  startTime: string;
-  endTime: string;
-  date: string;
-  available?: boolean;
-  isAvailable?: boolean;
-}
-
-export interface Booking {
-  id: number;
-  bookingDate: string;
-  status: BookingStatus;
-  totalAmount: number;
-  student?: {
-    studentId: number;
+// Shape of an order item as returned by the backend (/order-item/...).
+// Adjust the nested `order` and `product` fields if the backend sends different names.
+export interface OrderItem {
+  orderItemId: number;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  order?: {
+    orderId?: number | string;
+    id?: number | string;
   };
-  laundryMachine: LaundryMachine;
-  timeSlot: TimeSlot;
-}
-
-export interface CreateBookingRequest {
-  studentId: number;
-  machineId: number;
-  timeSlotId: number;
-  serviceId?: number;
-  totalAmount: number;
+  product?: {
+    productId?: string;
+    productName?: string;
+    name?: string;
+  };
 }

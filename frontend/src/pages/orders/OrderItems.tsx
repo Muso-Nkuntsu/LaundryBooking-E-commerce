@@ -1,150 +1,73 @@
-import { useEffect, useState } from "react";
-
+import { Link } from "react-router-dom";
+import { EmptyState, ErrorState, Loading } from "../../components/common/States";
+import { useFetch } from "../../hooks/useFetch";
 import { orderItemService } from "../../services/orderItemService";
-import type { OrderItem } from "../../types/orderItem";
+import { friendlyError } from "../../utilis/errorMessage";
+import { formatCurrency } from "../../utilis/FormatCurrency";
 
 function OrderItems() {
-  const [orderItems, setOrderItems] =
-    useState<OrderItem[]>([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState<string | null>(null);
-
-
-  useEffect(() => {
-
-    const loadOrderItems = async () => {
-
-      try {
-        setLoading(true);
-
-        const data =
-          await orderItemService.getAllOrderItems();
-
-        setOrderItems(data);
-
-      } catch (error) {
-
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to load order items"
-        );
-
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadOrderItems();
-
-  }, []);
-
+  const { data, loading, error, reload } = useFetch(() =>
+    orderItemService.getAllOrderItems().catch((err: unknown) => {
+      throw new Error(friendlyError(err, "We couldn't load your order items."));
+    }),
+  );
+  const orderItems = data ?? [];
 
   // Calculate total for all displayed items
-
-  const total = orderItems.reduce(
-    (sum, item) =>
-      sum + item.subtotal,
-    0
-  );
-
-
-  if (loading) {
-    return (
-      <div>
-        <h1>Order Items</h1>
-        <p>Loading order items...</p>
-      </div>
-    );
-  }
-
+  const total = orderItems.reduce((sum, item) => sum + (item.subtotal ?? 0), 0);
 
   return (
-    <div>
+    <div className="page">
+      <header className="page-head">
+        <div>
+          <h1>My orders</h1>
+          <p>Products you've ordered from the shop.</p>
+        </div>
+        <Link to="/products" className="btn btn-ghost">Go to the shop</Link>
+      </header>
 
-      <h1>Order Items</h1>
-
-      {error && (
-        <p>
-          {error}
-        </p>
+      {loading && <Loading message="Loading your orders..." />}
+      {!loading && error && <ErrorState message={error} onRetry={reload} />}
+      {!loading && !error && orderItems.length === 0 && (
+        <EmptyState
+          title="No orders yet"
+          message="When you buy something from the shop it will be listed here."
+          action={<Link to="/products" className="btn btn-primary">Browse the shop</Link>}
+        />
       )}
 
-
-      {orderItems.length === 0 ? (
-
-        <p>No order items found.</p>
-
-      ) : (
-
-        <>
-          <table>
-
+      {orderItems.length > 0 && (
+        <section className="card table-wrap">
+          <table className="table">
             <thead>
-
               <tr>
-                <th>Order ID</th>
+                <th>Order</th>
                 <th>Item</th>
-                <th>Quantity</th>
-                <th>Unit Price</th>
-                <th>Subtotal</th>
+                <th className="num">Quantity</th>
+                <th className="num">Unit price</th>
+                <th className="num">Subtotal</th>
               </tr>
-
             </thead>
-
-
             <tbody>
-
               {orderItems.map((item) => (
-
-                <tr
-                  key={item.orderItemId}
-                >
-
-                  <td>
-                    {item.order?.orderId ||
-                      item.order?.id ||
-                      "N/A"}
-                  </td>
-
-                  <td>
-                    {item.product?.productName ||
-                      item.product?.name ||
-                      "Unknown Product"}
-                  </td>
-
-                  <td>
-                    {item.quantity}
-                  </td>
-
-                  <td>
-                    R{item.unitPrice.toFixed(2)}
-                  </td>
-
-                  <td>
-                    R{item.subtotal.toFixed(2)}
-                  </td>
-
+                <tr key={item.orderItemId}>
+                  <td>#{item.order?.orderId || item.order?.id || "N/A"}</td>
+                  <td><strong>{item.product?.productName || item.product?.name || "Unknown product"}</strong></td>
+                  <td className="num">{item.quantity}</td>
+                  <td className="num">{formatCurrency(item.unitPrice ?? 0)}</td>
+                  <td className="num">{formatCurrency(item.subtotal ?? 0)}</td>
                 </tr>
-
               ))}
-
             </tbody>
-
+            <tfoot>
+              <tr>
+                <td colSpan={4} className="num">Total</td>
+                <td className="num price" style={{ fontSize: "1.2rem" }}>{formatCurrency(total)}</td>
+              </tr>
+            </tfoot>
           </table>
-
-
-          <h2>
-            Total: R{total.toFixed(2)}
-          </h2>
-
-        </>
+        </section>
       )}
-
     </div>
   );
 }
