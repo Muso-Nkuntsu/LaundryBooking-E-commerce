@@ -42,16 +42,23 @@ function MakeBooking() {
   const allMachines = machinesQuery.data ?? [];
   const machines = roomFilter ? allMachines.filter((machine) => machine.laundryRoom?.roomId === roomFilter) : allMachines;
 
+  // Once a time is chosen, ask the backend which machines are still free for it.
+  const slotId = selectedSlot?.id ?? 0;
+  const freeQuery = useFetch(
+    () => (slotId ? bookingService.getAvailableMachines(slotId) : Promise.resolve(null)),
+    slotId,
+  );
+  const freeIds = freeQuery.data ? new Set(freeQuery.data.map((machine) => machine.machineId)) : null;
+  const isFree = (machine: LaundryMachine) =>
+    freeIds ? freeIds.has(machine.machineId) : machine.status !== "OUT_OF_ORDER";
+
   const total = laundryServicePrice ?? 0;
   const step = !selectedSlot ? 0 : !selectedMachine ? 1 : 2;
 
   const handleSlotSelect = (slot: TimeSlot) => {
     setSelectedSlot(slot);
-    // Some time slots already belong to one machine; pick it automatically.
-    if (slot.machineId) {
-      const match = allMachines.find((machine) => machine.machineId === slot.machineId);
-      if (match) setSelectedMachine(match);
-    }
+    // A machine picked for another time may be taken at this one, so choose again.
+    setSelectedMachine(null);
   };
 
   const handleConfirm = async () => {
@@ -64,11 +71,13 @@ function MakeBooking() {
         machineId: selectedMachine.machineId,
         timeSlotId: selectedSlot.id,
         serviceId: laundryServiceId,
-        totalAmount: total,
       });
       navigate("/booking-confirmation", { state: { booking } });
     } catch (error) {
       toast.error(friendlyError(error, "We couldn't create your booking. Try again."));
+      // Someone may have taken the machine in the meantime, so refresh what is free.
+      setSelectedMachine(null);
+      freeQuery.reload();
     } finally {
       setSubmitting(false);
     }
@@ -113,7 +122,11 @@ function MakeBooking() {
       <section className="card">
         <h2>Which machine</h2>
         <p className="muted small" style={{ margin: "4px 0 16px" }}>
-          {roomFilter ? "Showing machines in the room you chose." : "Machines from every laundry room."}
+          {!selectedSlot
+            ? "Choose a time first to see which machines are free."
+            : roomFilter
+              ? "Machines in the room you chose that are free at this time."
+              : "Machines that are free at this time, from every laundry room."}
         </p>
 
         {machinesQuery.loading && <Loading message="Loading machines..." />}
@@ -133,6 +146,8 @@ function MakeBooking() {
                 key={machine.machineId}
                 machine={machine}
                 selected={selectedMachine?.machineId === machine.machineId}
+                bookable={Boolean(selectedSlot) && isFree(machine)}
+                unavailableLabel={!selectedSlot ? undefined : machine.status === "OUT_OF_ORDER" ? "Out of order" : "Booked"}
                 onSelect={setSelectedMachine}
               />
             ))}

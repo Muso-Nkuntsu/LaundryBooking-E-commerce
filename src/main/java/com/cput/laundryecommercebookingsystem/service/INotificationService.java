@@ -22,6 +22,8 @@ public interface INotificationService {
 
     Notification markAsRead(Long notificationId);
 
+    List<Notification> markAllAsRead(Student student);
+
     Optional<Notification> findById(Long notificationId);
 
     List<Notification> findByStudent(Student student);

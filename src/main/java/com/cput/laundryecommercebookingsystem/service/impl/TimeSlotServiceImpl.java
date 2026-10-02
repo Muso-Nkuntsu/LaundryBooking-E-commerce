@@ -58,6 +58,15 @@ public class TimeSlotServiceImpl implements TimeSlotService {
     }
     @Override
     @Transactional(readOnly = true)
+    public List<TimeSlot> getUpcomingTimeSlots(int days) {
+        if (days < 0) {
+            throw new IllegalArgumentException("days must not be negative");
+        }
+        LocalDate today = LocalDate.now();
+        return timeSlotRepository.findByDateBetweenOrderByDateAscStartTimeAsc(today, today.plusDays(days));
+    }
+    @Override
+    @Transactional(readOnly = true)
     public List<TimeSlot> getAllTimeSlots() {
         return timeSlotRepository.findAll();
     }

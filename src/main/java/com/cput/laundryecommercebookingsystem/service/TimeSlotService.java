@@ -16,6 +16,8 @@ public interface TimeSlotService {
     Optional<TimeSlot> getTimeSlotById(Long timeSlotId);
     List<TimeSlot> getAvailableTimeSlots();
     List<TimeSlot> getTimeSlotsByDate(LocalDate date);
+    /** Slots from today up to and including the given number of days ahead, earliest first. */
+    List<TimeSlot> getUpcomingTimeSlots(int days);
     List<TimeSlot> getAllTimeSlots();
     boolean deleteTimeSlot(Long timeSlotId);
 }

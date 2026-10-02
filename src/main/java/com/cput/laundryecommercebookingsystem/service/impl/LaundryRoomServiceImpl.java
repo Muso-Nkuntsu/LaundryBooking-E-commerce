@@ -36,7 +36,7 @@ public class LaundryRoomServiceImpl implements ILaundryRoomService {
 
     @Override
     @Transactional
-    public LaundryRoom activateRoom(int roomId) {
+    public LaundryRoom activateRoom(Long roomId) {
         LaundryRoom room = getRoomOrThrow(roomId);
         room.addRoom();
         return laundryRoomRepository.save(room);
@@ -44,7 +44,7 @@ public class LaundryRoomServiceImpl implements ILaundryRoomService {
 
     @Override
     @Transactional
-    public LaundryRoom deactivateRoom(int roomId) {
+    public LaundryRoom deactivateRoom(Long roomId) {
         LaundryRoom room = getRoomOrThrow(roomId);
         room.deactivateRoom();
         return laundryRoomRepository.save(room);
@@ -52,7 +52,7 @@ public class LaundryRoomServiceImpl implements ILaundryRoomService {
 
     @Override
     @Transactional
-    public LaundryRoom updateRoom(int roomId, String location, int capacity, String description) {
+    public LaundryRoom updateRoom(Long roomId, String location, int capacity, String description) {
         LaundryRoom room = getRoomOrThrow(roomId);
         room.updateRoom(location, capacity, description);
         return laundryRoomRepository.save(room);
@@ -60,7 +60,7 @@ public class LaundryRoomServiceImpl implements ILaundryRoomService {
 
     @Override
     @Transactional
-    public LaundryRoom addMachineToRoom(int roomId, LaundryMachine machine) {
+    public LaundryRoom addMachineToRoom(Long roomId, LaundryMachine machine) {
         LaundryRoom room = getRoomOrThrow(roomId);
         room.addMachine(machine);
         return laundryRoomRepository.save(room);
@@ -68,7 +68,7 @@ public class LaundryRoomServiceImpl implements ILaundryRoomService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<LaundryRoom> getRoomById(int roomId) {
+    public Optional<LaundryRoom> getRoomById(Long roomId) {
         return laundryRoomRepository.findById(roomId);
     }
 
@@ -86,7 +86,7 @@ public class LaundryRoomServiceImpl implements ILaundryRoomService {
 
     @Override
     @Transactional
-    public boolean deleteRoom(int roomId) {
+    public boolean deleteRoom(Long roomId) {
         if (laundryRoomRepository.existsById(roomId)) {
             laundryRoomRepository.deleteById(roomId);
             return true;
@@ -94,7 +94,7 @@ public class LaundryRoomServiceImpl implements ILaundryRoomService {
         return false;
     }
 
-    private LaundryRoom getRoomOrThrow(int roomId) {
+    private LaundryRoom getRoomOrThrow(Long roomId) {
         return laundryRoomRepository.findById(roomId)
                 .orElseThrow(() -> new NoSuchElementException("LaundryRoom not found with id: " + roomId));
     }

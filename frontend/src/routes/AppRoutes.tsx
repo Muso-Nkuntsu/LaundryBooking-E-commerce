@@ -2,7 +2,7 @@ import React from "react";
 import type { ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import AppLayout from "../components/layout/AppLayout";
+import RequireLogin from "../components/layout/RequireLogin";
 import { ToastProvider } from "../context/ToastProvider";
 
 import Login from "../pages/auth/Login";
@@ -27,8 +27,8 @@ import OrderItems from "../pages/orders/OrderItems";
 import NotificationsPage from "../pages/notifications/NotificationPage";
 import ReviewsPage from "../pages/reviews/ReviewPage";
 
-// Wraps a signed-in page in the navigation bar.
-const withNav = (page: ReactNode) => <AppLayout>{page}</AppLayout>;
+// Every page except login and register needs a logged-in student.
+const withNav = (page: ReactNode) => <RequireLogin>{page}</RequireLogin>;
 
 const AppRoutes: React.FC = () => {
   return (

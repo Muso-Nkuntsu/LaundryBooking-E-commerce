@@ -1,37 +1,24 @@
 package com.cput.laundryecommercebookingsystem.config;
 
-
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-
-import java.util.List;
 /**Muso Nkuntsu -231223722
  *
- * **/
-
+ * Lets the React frontend (a different address from the backend) call every endpoint.
+ * Registered through WebMvcConfigurer so Spring MVC applies it without Spring Security.
+ **/
 @Configuration
-public class GlobalCORS {
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource(){
-        CorsConfiguration configuration = new CorsConfiguration();
+public class GlobalCORS implements WebMvcConfigurer {
 
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // Allow requests from this origin
-
-        configuration.setAllowedMethods(List.of(
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "OPTIONS")); // Allow these HTTP methods
-
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                // Vite dev server (5173) and "vite preview" (4173)
+                .allowedOrigins("http://localhost:5173", "http://localhost:4173")
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true);
     }
 }

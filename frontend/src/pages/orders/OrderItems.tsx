@@ -2,14 +2,18 @@ import { Link } from "react-router-dom";
 import { EmptyState, ErrorState, Loading } from "../../components/common/States";
 import { useFetch } from "../../hooks/useFetch";
 import { orderItemService } from "../../services/orderItemService";
+import { getStudentId } from "../../services/session";
 import { friendlyError } from "../../utilis/errorMessage";
 import { formatCurrency } from "../../utilis/FormatCurrency";
 
 function OrderItems() {
-  const { data, loading, error, reload } = useFetch(() =>
-    orderItemService.getAllOrderItems().catch((err: unknown) => {
-      throw new Error(friendlyError(err, "We couldn't load your order items."));
-    }),
+  const studentId = getStudentId();
+  const { data, loading, error, reload } = useFetch(
+    () =>
+      orderItemService.getOrderItemsByStudent(studentId).catch((err: unknown) => {
+        throw new Error(friendlyError(err, "We couldn't load your order items."));
+      }),
+    studentId,
   );
   const orderItems = data ?? [];
 

@@ -1,3 +1,4 @@
+import { apiGet, apiPost, apiPut } from "./Api";
 import type {
   Booking,
   CreateBookingRequest,
@@ -6,129 +7,47 @@ import type {
   TimeSlot,
 } from "../types/booking";
 
-const API_BASE_URL = "http://localhost:8080";
-
 export const bookingService = {
-
   // ---------------- LAUNDRY ROOMS ----------------
 
-  async getActiveRooms(): Promise<LaundryRoom[]> {
-    const response = await fetch(
-      `${API_BASE_URL}/laundry-room/active`
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to load laundry rooms");
-    }
-
-    return response.json();
+  getActiveRooms(): Promise<LaundryRoom[]> {
+    return apiGet<LaundryRoom[]>("/laundry-room/active");
   },
-
 
   // ---------------- MACHINES ----------------
 
-  async getAllMachines(): Promise<LaundryMachine[]> {
-    const response = await fetch(
-      `${API_BASE_URL}/laundrymachine/getall`
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to load laundry machines");
-    }
-
-    return response.json();
+  getAllMachines(): Promise<LaundryMachine[]> {
+    return apiGet<LaundryMachine[]>("/laundrymachine/getall");
   },
 
+  /** Machines that are not out of order and not already booked for this time slot. */
+  getAvailableMachines(timeSlotId: number): Promise<LaundryMachine[]> {
+    return apiGet<LaundryMachine[]>("/laundrymachine/available", { timeSlotId });
+  },
 
   // ---------------- TIME SLOTS ----------------
 
-  async getAllTimeSlots(): Promise<TimeSlot[]> {
-    const response = await fetch(
-      `${API_BASE_URL}/timeslot/all`
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to load time slots");
-    }
-
-    return response.json();
+  getAllTimeSlots(): Promise<TimeSlot[]> {
+    return apiGet<TimeSlot[]>("/timeslot/all");
   },
-
 
   // ---------------- BOOKINGS ----------------
 
-  async createBooking(
-    booking: CreateBookingRequest
-  ): Promise<Booking> {
-
-    const params = new URLSearchParams({
-      studentId: booking.studentId.toString(),
-      machineId: booking.machineId.toString(),
-      timeSlotId: booking.timeSlotId.toString(),
-      totalAmount: booking.totalAmount.toString(),
+  /** The backend works out the total from the chosen service. */
+  createBooking(booking: CreateBookingRequest): Promise<Booking> {
+    return apiPost<Booking>("/api/bookings", undefined, {
+      studentId: booking.studentId,
+      machineId: booking.machineId,
+      timeSlotId: booking.timeSlotId,
+      serviceId: booking.serviceId,
     });
-
-    if (booking.serviceId) {
-      params.append(
-        "serviceId",
-        booking.serviceId.toString()
-      );
-    }
-
-    const response = await fetch(
-      `${API_BASE_URL}/api/bookings?${params.toString()}`,
-      {
-        method: "POST",
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-
-      throw new Error(
-        errorText || "Failed to create booking"
-      );
-    }
-
-    return response.json();
   },
 
-
-  // ---------------- STUDENT BOOKINGS ----------------
-
-  async getBookingsByStudent(
-    studentId: number
-  ): Promise<Booking[]> {
-
-    const response = await fetch(
-      `${API_BASE_URL}/api/bookings/student/${studentId}`
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to load bookings");
-    }
-
-    return response.json();
+  getBookingsByStudent(studentId: number): Promise<Booking[]> {
+    return apiGet<Booking[]>(`/api/bookings/student/${studentId}`);
   },
 
-
-  // ---------------- CANCEL BOOKING ----------------
-
-  async cancelBooking(
-    bookingId: number
-  ): Promise<Booking> {
-
-    const response = await fetch(
-      `${API_BASE_URL}/api/bookings/${bookingId}/cancel`,
-      {
-        method: "PUT",
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to cancel booking");
-    }
-
-    return response.json();
+  cancelBooking(bookingId: number): Promise<Booking> {
+    return apiPut<Booking>(`/api/bookings/${bookingId}/cancel`);
   },
 };

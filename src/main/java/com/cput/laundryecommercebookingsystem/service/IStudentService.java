@@ -17,6 +17,9 @@ public interface IStudentService {
 
     Student updateStudent(Student student);
 
+    /** Returns the student when the email and password match, otherwise empty. */
+    Optional<Student> login(String email, String password);
+
     void deleteStudent(Long studentId);
 
     Optional<Student> getStudentById(Long studentId);

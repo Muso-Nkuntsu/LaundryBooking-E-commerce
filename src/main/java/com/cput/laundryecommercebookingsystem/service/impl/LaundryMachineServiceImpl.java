@@ -1,14 +1,23 @@
 package com.cput.laundryecommercebookingsystem.service.impl;
 
+import com.cput.laundryecommercebookingsystem.domain.Booking;
 import com.cput.laundryecommercebookingsystem.domain.LaundryMachine;
+import com.cput.laundryecommercebookingsystem.domain.LaundryRoom;
+import com.cput.laundryecommercebookingsystem.domain.TimeSlot;
+import com.cput.laundryecommercebookingsystem.domain.enums.BookingStatus;
 import com.cput.laundryecommercebookingsystem.domain.enums.MachineStatus;
 import com.cput.laundryecommercebookingsystem.factory.LaundryMachineFactory;
 import com.cput.laundryecommercebookingsystem.repository.ILaundryMachineRepository;
+import com.cput.laundryecommercebookingsystem.repository.ILaundryRoomRepository;
+import com.cput.laundryecommercebookingsystem.repository.TimeSlotRepository;
+import com.cput.laundryecommercebookingsystem.repository.iBookingRepository;
 import com.cput.laundryecommercebookingsystem.service.ILaundryMachineService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -23,12 +32,20 @@ public class LaundryMachineServiceImpl
         implements ILaundryMachineService {
 
     private final ILaundryMachineRepository laundryMachineRepository;
+    private final ILaundryRoomRepository laundryRoomRepository;
+    private final TimeSlotRepository timeSlotRepository;
+    private final iBookingRepository bookingRepository;
 
     public LaundryMachineServiceImpl(
-            ILaundryMachineRepository laundryMachineRepository) {
+            ILaundryMachineRepository laundryMachineRepository,
+            ILaundryRoomRepository laundryRoomRepository,
+            TimeSlotRepository timeSlotRepository,
+            iBookingRepository bookingRepository) {
 
-        this.laundryMachineRepository =
-                laundryMachineRepository;
+        this.laundryMachineRepository = laundryMachineRepository;
+        this.laundryRoomRepository = laundryRoomRepository;
+        this.timeSlotRepository = timeSlotRepository;
+        this.bookingRepository = bookingRepository;
     }
 
     @Override
@@ -39,10 +56,52 @@ public class LaundryMachineServiceImpl
             MachineStatus status,
             Long laundryRoomId) {
 
+        if (laundryRoomId == null) {
+            throw new IllegalArgumentException("Laundry room ID is required");
+        }
 
-        throw new UnsupportedOperationException(
-                "Implement LaundryRoom lookup before creating LaundryMachine."
-        );
+        LaundryRoom room = laundryRoomRepository.findById(laundryRoomId)
+                .orElseThrow(() -> new NoSuchElementException(
+                        "LaundryRoom not found with id: " + laundryRoomId));
+
+        if (machineNumber != null
+                && laundryMachineRepository.findByMachineNumber(machineNumber).isPresent()) {
+            throw new IllegalStateException(
+                    "A machine with number " + machineNumber + " already exists");
+        }
+
+        // New machines start as AVAILABLE unless another status is given.
+        LaundryMachine machine = new LaundryMachineFactory().create(
+                machineNumber,
+                type,
+                status != null ? status : MachineStatus.AVAILABLE,
+                room);
+
+        return laundryMachineRepository.save(machine);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LaundryMachine> getAvailableMachines(Long timeSlotId) {
+
+        TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
+                .orElseThrow(() -> new NoSuchElementException(
+                        "TimeSlot not found with id: " + timeSlotId));
+
+        // Machines that already have an active booking in this slot.
+        Set<Long> bookedMachineIds = bookingRepository
+                .findByTimeSlotAndStatusNot(timeSlot, BookingStatus.CANCELLED)
+                .stream()
+                .map(Booking::getLaundryMachine)
+                .map(LaundryMachine::getMachineId)
+                .collect(Collectors.toSet());
+
+        // IN_USE describes right now, so it does not stop a booking for a later slot.
+        return laundryMachineRepository.findAll()
+                .stream()
+                .filter(machine -> machine.getStatus() != MachineStatus.OUT_OF_ORDER)
+                .filter(machine -> !bookedMachineIds.contains(machine.getMachineId()))
+                .collect(Collectors.toList());
     }
 
     @Override

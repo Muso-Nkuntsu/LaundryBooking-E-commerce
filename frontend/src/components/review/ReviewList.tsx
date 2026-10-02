@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import type { Review, ReviewSummary } from "../../types/review";
+import type { LaundryService } from "../../types/LaundryService";
 import { reviewService } from "../../services/reviewServices";
+import { laundryServiceService } from "../../services/LaundryServiceService";
 import { Rating } from "./Rating";
 import { ReviewForm } from "./ReviewForm";
+import type { ReviewFormValues } from "./ReviewForm";
 import ConfirmDialog from "../common/ConfirmDialog";
 import { ErrorState, Loading } from "../common/States";
 import { useFetch } from "../../hooks/useFetch";
@@ -10,12 +13,14 @@ import { useToast } from "../../context/useToast";
 import { friendlyError } from "../../utilis/errorMessage";
 
 interface ReviewListProps {
-  currentUserId?: string;
+  /** ID of the logged-in student: used to post reviews and to show Delete on their own. */
+  currentUserId: number;
 }
 
 interface ReviewData {
   reviews: Review[];
   summary: ReviewSummary | null;
+  services: LaundryService[];
 }
 
 export const ReviewList: React.FC<ReviewListProps> = ({ currentUserId }) => {
@@ -25,8 +30,12 @@ export const ReviewList: React.FC<ReviewListProps> = ({ currentUserId }) => {
 
   const { data, loading, error, reload, setData } = useFetch<ReviewData>(async () => {
     try {
-      const [reviews, summary] = await Promise.all([reviewService.fetchReviews(), reviewService.fetchReviewSummary()]);
-      return { reviews: Array.isArray(reviews) ? reviews : [], summary };
+      const [reviews, summary, services] = await Promise.all([
+        reviewService.fetchReviews(),
+        reviewService.fetchReviewSummary(),
+        laundryServiceService.getAllServices(),
+      ]);
+      return { reviews, summary, services };
     } catch (err) {
       throw new Error(friendlyError(err, "We couldn't load the reviews."));
     }
@@ -37,8 +46,8 @@ export const ReviewList: React.FC<ReviewListProps> = ({ currentUserId }) => {
     setData((prev) => (prev ? { ...prev, summary } : prev));
   };
 
-  const handleCreateReview = async (payload: { rating: number; comment: string }) => {
-    const newReview = await reviewService.createReview(payload);
+  const handleCreateReview = async (values: ReviewFormValues) => {
+    const newReview = await reviewService.createReview({ ...values, studentId: currentUserId });
     setData((prev) => (prev ? { ...prev, reviews: [newReview, ...prev.reviews] } : prev));
     toast.success("Review posted.");
     await refreshSummary().catch(() => undefined);
@@ -63,7 +72,7 @@ export const ReviewList: React.FC<ReviewListProps> = ({ currentUserId }) => {
   if (loading) return <Loading message="Loading reviews..." />;
   if (error || !data) return <ErrorState message={error ?? "We couldn't load the reviews."} onRetry={reload} />;
 
-  const { reviews, summary } = data;
+  const { reviews, summary, services } = data;
 
   return (
     <div className="stack">
@@ -90,7 +99,7 @@ export const ReviewList: React.FC<ReviewListProps> = ({ currentUserId }) => {
         </section>
       )}
 
-      <ReviewForm onSubmit={handleCreateReview} />
+      <ReviewForm services={services} onSubmit={handleCreateReview} />
 
       <h2 style={{ marginTop: 8 }}>What students say</h2>
       {reviews.length === 0 ? (
@@ -101,6 +110,7 @@ export const ReviewList: React.FC<ReviewListProps> = ({ currentUserId }) => {
             <div className="row" style={{ alignItems: "flex-start" }}>
               <div>
                 <strong>{review.userName}</strong>
+                {review.serviceName && <span className="muted small"> on {review.serviceName}</span>}
                 <div><Rating value={review.rating} readOnly size="sm" /></div>
               </div>
               <div className="row small muted">

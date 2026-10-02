@@ -1,51 +1,22 @@
+import { apiDelete, apiGet } from "./Api";
 import type { OrderItem } from "../types/orderItem";
 
-const API_BASE_URL = "http://localhost:8080";
-
 export const orderItemService = {
-
-  async getAllOrderItems(): Promise<OrderItem[]> {
-    const response = await fetch(
-      `${API_BASE_URL}/order-item/getall`
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to load order items");
-    }
-
-    return response.json();
+  /** Everything one student has ordered. */
+  getOrderItemsByStudent(studentId: number): Promise<OrderItem[]> {
+    return apiGet<OrderItem[]>(`/order-item/student/${studentId}`);
   },
 
-
-  async getOrderItemById(
-    id: number
-  ): Promise<OrderItem> {
-
-    const response = await fetch(
-      `${API_BASE_URL}/order-item/read/${id}`
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to load order item");
-    }
-
-    return response.json();
+  /** Every order item in the system (for admin screens). */
+  getAllOrderItems(): Promise<OrderItem[]> {
+    return apiGet<OrderItem[]>("/order-item/getall");
   },
 
+  getOrderItemById(id: number): Promise<OrderItem> {
+    return apiGet<OrderItem>(`/order-item/read/${id}`);
+  },
 
-  async deleteOrderItem(
-    id: number
-  ): Promise<void> {
-
-    const response = await fetch(
-      `${API_BASE_URL}/order-item/delete/${id}`,
-      {
-        method: "DELETE",
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to delete order item");
-    }
+  async deleteOrderItem(id: number): Promise<void> {
+    await apiDelete(`/order-item/delete/${id}`);
   },
 };

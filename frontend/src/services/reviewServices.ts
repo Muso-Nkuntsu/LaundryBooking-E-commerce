@@ -1,46 +1,45 @@
-import type { Review, ReviewSummary, CreateReviewPayload, UpdateReviewPayload } from '../types/review';
+import { apiDelete, apiGet, apiPost } from './Api';
+import type { Review, ReviewSummary, CreateReviewPayload } from '../types/review';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-  }
-  return response.json();
+// Shape sent by the backend: the student and the service are nested objects.
+interface RawReview {
+  id: number;
+  rating: number;
+  comment: string;
+  date: string;
+  student?: { studentId: number; firstName?: string; lastName?: string };
+  laundryService?: { id: number; serviceName?: string };
 }
+
+const toReview = (raw: RawReview): Review => {
+  const first = raw.student?.firstName ?? 'Student';
+  const lastInitial = raw.student?.lastName ? ` ${raw.student.lastName[0]}.` : '';
+  return {
+    id: raw.id,
+    userId: raw.student?.studentId ?? 0,
+    userName: `${first}${lastInitial}`,
+    rating: raw.rating,
+    comment: raw.comment,
+    createdAt: raw.date,
+    serviceId: raw.laundryService?.id,
+    serviceName: raw.laundryService?.serviceName,
+  };
+};
 
 export const reviewService = {
   async fetchReviews(): Promise<Review[]> {
-    const res = await fetch(`${BASE_URL}/reviews`);
-    return handleResponse<Review[]>(res);
+    return (await apiGet<RawReview[]>('/review/getall')).map(toReview);
   },
 
-  async fetchReviewSummary(): Promise<ReviewSummary> {
-    const res = await fetch(`${BASE_URL}/reviews/summary`);
-    return handleResponse<ReviewSummary>(res);
+  fetchReviewSummary(): Promise<ReviewSummary> {
+    return apiGet<ReviewSummary>('/review/summary');
   },
 
   async createReview(payload: CreateReviewPayload): Promise<Review> {
-    const res = await fetch(`${BASE_URL}/reviews`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    return handleResponse<Review>(res);
+    return toReview(await apiPost<RawReview>('/review/create', payload));
   },
 
-  async updateReview(id: string, payload: UpdateReviewPayload): Promise<Review> {
-    const res = await fetch(`${BASE_URL}/reviews/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    return handleResponse<Review>(res);
+  async deleteReview(id: number): Promise<void> {
+    await apiDelete(`/review/delete/${id}`);
   },
-
-  async deleteReview(id: string): Promise<void> {
-    const res = await fetch(`${BASE_URL}/reviews/${id}`, { method: 'DELETE' });
-    return handleResponse<void>(res);
-  }
 };

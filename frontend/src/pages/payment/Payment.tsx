@@ -3,6 +3,8 @@ import type { FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import TextField from "../../components/common/TextField";
 import Icon from "../../components/common/Icon";
+import { createBookingPayment } from "../../services/paymentService";
+import { friendlyError } from "../../utilis/errorMessage";
 import { formatCurrency } from "../../utilis/FormatCurrency";
 
 type Method = "card" | "eft";
@@ -18,7 +20,7 @@ function formatExpiry(raw: string): string {
 
 function Payment() {
   const location = useLocation();
-  const state = (location.state ?? {}) as { amount?: number; description?: string };
+  const state = (location.state ?? {}) as { amount?: number; description?: string; bookingId?: number };
   const amount = typeof state.amount === "number" ? state.amount : 0;
 
   const [method, setMethod] = useState<Method>("card");
@@ -27,6 +29,8 @@ function Payment() {
   const [cvv, setCvv] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [paid, setPaid] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState("");
 
   const errors: { cardNumber?: string; expiryDate?: string; cvv?: string } = {};
   if (method === "card") {
@@ -35,12 +39,26 @@ function Payment() {
     if (!/^\d{3,4}$/.test(cvv)) errors.cvv = "Enter the 3 digits on the back of the card.";
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitted(true);
+    setServerError("");
     if (Object.keys(errors).length > 0) return;
 
-    // No payment gateway is connected yet, so nothing is charged here.
+    // No payment gateway is connected, so nothing is charged and card details are not sent.
+    // For a booking with an amount, the payment is recorded on the backend as PENDING.
+    if (state.bookingId && amount > 0) {
+      try {
+        setSubmitting(true);
+        await createBookingPayment(state.bookingId, amount, method === "card" ? "CARD" : "EFT");
+      } catch (error) {
+        setServerError(friendlyError(error, "We couldn't record your payment. Try again."));
+        return;
+      } finally {
+        setSubmitting(false);
+      }
+    }
+
     setPaid(true);
   };
 
@@ -131,8 +149,10 @@ function Payment() {
           </div>
         )}
 
-        <button type="submit" className="btn btn-primary btn-block">
-          Pay {formatCurrency(amount)}
+        {serverError && <div className="alert alert-error" role="alert">{serverError}</div>}
+
+        <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+          {submitting ? "Submitting..." : `Pay ${formatCurrency(amount)}`}
         </button>
       </form>
     </div>

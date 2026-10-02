@@ -27,5 +27,9 @@ public interface IOrderItemService {
 
     List<OrderItem> getOrderItemsByProduct(Product product);
 
+    List<OrderItem> getOrderItemsByOrderId(Long orderId);
+
+    List<OrderItem> getOrderItemsByStudentId(Long studentId);
+
     List<OrderItem> getAllOrderItems();
 }

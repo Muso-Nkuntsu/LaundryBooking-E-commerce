@@ -51,7 +51,7 @@ function BookingConfirmation() {
       <div className="btn-row" style={{ marginTop: 18 }}>
         <Link to="/my-bookings" className="btn btn-primary">View my bookings</Link>
         {booking.totalAmount > 0 && (
-          <Link to="/payment" state={{ amount: booking.totalAmount, description: `Booking #${booking.id}` }} className="btn btn-sun">
+          <Link to="/payment" state={{ amount: booking.totalAmount, description: `Booking #${booking.id}`, bookingId: booking.id }} className="btn btn-sun">
             Pay now
           </Link>
         )}

@@ -26,4 +26,10 @@ public interface iBookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByStatus(BookingStatus status);
     List<Booking> findByStudentAndStatus(Student student, BookingStatus status);
     Optional<Booking> findByLaundryMachineAndTimeSlot(LaundryMachine laundryMachine, TimeSlot timeSlot);
+
+    /** True when the machine already has a booking in this slot that has not been cancelled. */
+    boolean existsByLaundryMachineAndTimeSlotAndStatusNot(LaundryMachine laundryMachine, TimeSlot timeSlot, BookingStatus status);
+
+    /** Every booking in a time slot except those with the given status. */
+    List<Booking> findByTimeSlotAndStatusNot(TimeSlot timeSlot, BookingStatus status);
 }
