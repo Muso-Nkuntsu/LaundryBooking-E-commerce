@@ -1,6 +1,6 @@
-import { Review, ReviewSummary, CreateReviewPayload, UpdateReviewPayload } from '../types/review';
+import type { Review, ReviewSummary, CreateReviewPayload, UpdateReviewPayload } from '../types/review';
 
-const BASE_URL = process.env.REACT_APP_API_BASE_URL || '/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {

@@ -1,55 +1,50 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import type { LaundryRoom } from "../../types/LaundryRoom";
+import { EmptyState, ErrorState, SkeletonGrid } from "../../components/common/States";
+import Icon from "../../components/common/Icon";
+import { useFetch } from "../../hooks/useFetch";
 import { getActiveLaundryRooms } from "../../services/laundryRoomService";
+import { friendlyError } from "../../utilis/errorMessage";
 
 function LaundryRooms() {
-  const [rooms, setRooms] = useState<LaundryRoom[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    getActiveLaundryRooms()
-      .then(setRooms)
-      .catch(() => setError("Unable to load laundry rooms. Please try again."))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, loading, error, reload } = useFetch(() =>
+    getActiveLaundryRooms().catch((err: unknown) => {
+      throw new Error(friendlyError(err, "We couldn't load the laundry rooms."));
+    }),
+  );
+  const rooms = data ?? [];
 
   return (
-    <main className="page-shell">
-      <div className="page-heading">
+    <div className="page">
+      <header className="page-head">
         <div>
-          <p className="eyebrow">LAUNDRY FACILITIES</p>
-          <h1>Laundry Rooms</h1>
-          <p>Select a laundry room to view its machines.</p>
+          <h1>Laundry rooms</h1>
+          <p>Open a room to see its machines and which ones are free right now.</p>
         </div>
-        <Link className="secondary-button" to="/dashboard">Dashboard</Link>
-      </div>
+      </header>
 
-      {loading && <div className="state-card">Loading laundry rooms...</div>}
-      {error && <div className="state-card error">{error}</div>}
+      {loading && <SkeletonGrid count={3} height={210} />}
+      {!loading && error && <ErrorState message={error} onRetry={reload} />}
       {!loading && !error && rooms.length === 0 && (
-        <div className="state-card">No active laundry rooms are available.</div>
+        <EmptyState title="No rooms open" message="No laundry rooms are active at the moment. Check back later." />
       )}
 
-      <section className="card-grid">
+      <section className="grid grid-3">
         {rooms.map((room) => (
-          <article className="feature-card" key={room.roomId}>
-            <div className="card-icon">⌂</div>
+          <Link className="card tile" key={room.roomId} to={`/laundry-rooms/${room.roomId}`}>
+            <span className="action" style={{ padding: 0, border: 0, background: "none", boxShadow: "none", transform: "none" }}>
+              <span className="ic"><Icon name="door" /></span>
+            </span>
             <h2>{room.roomNumber}</h2>
             <p className="muted">{room.location}</p>
-            <p>{room.description || "Laundry facility available for students."}</p>
-            <div className="info-row">
-              <span>Capacity</span>
-              <strong>{room.capacity}</strong>
+            <p>{room.description || "Laundry room for residents."}</p>
+            <div className="row push">
+              <span className="muted small">Capacity {room.capacity}</span>
+              <span className="link-btn">View machines</span>
             </div>
-            <Link className="primary-button full-width" to={`/laundry-rooms/${room.roomId}`}>
-              View Room
-            </Link>
-          </article>
+          </Link>
         ))}
       </section>
-    </main>
+    </div>
   );
 }
 

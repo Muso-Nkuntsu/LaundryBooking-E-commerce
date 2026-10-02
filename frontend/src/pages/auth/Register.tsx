@@ -1,172 +1,137 @@
-import { createStudent } from "../../services/studentService";
-import {useState } from "react";
-import type { FormEvent} from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import AuthLayout from "../../components/layout/AuthLayout";
+import TextField from "../../components/common/TextField";
+import { createStudent } from "../../services/studentService";
+import { saveSession } from "../../services/session";
+import { friendlyError } from "../../utilis/errorMessage";
+import { useToast } from "../../context/useToast";
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_PATTERN = /^\+?[0-9\s-]{9,15}$/;
+const STRENGTH_LABEL = ["", "Weak", "Fair", "Good", "Strong"];
+
+type FieldName = "firstName" | "lastName" | "email" | "phoneNumber" | "password" | "confirmPassword";
+type Values = Record<FieldName, string>;
+type Errors = Partial<Record<FieldName, string>>;
+
+const EMPTY: Values = { firstName: "", lastName: "", email: "", phoneNumber: "", password: "", confirmPassword: "" };
+
+function passwordStrength(password: string): number {
+  if (!password) return 0;
+  let score = 0;
+  if (password.length >= 6) score += 1;
+  if (password.length >= 10) score += 1;
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 1;
+  if (/\d/.test(password) && /[^A-Za-z0-9]/.test(password)) score += 1;
+  return Math.max(score, 1);
+}
+
+function validate(values: Values): Errors {
+  const errors: Errors = {};
+  if (!values.firstName.trim()) errors.firstName = "Enter your first name.";
+  if (!values.lastName.trim()) errors.lastName = "Enter your last name.";
+  if (!values.email.trim()) errors.email = "Enter your email address.";
+  else if (!EMAIL_PATTERN.test(values.email.trim())) errors.email = "That doesn't look like an email address.";
+  if (!values.phoneNumber.trim()) errors.phoneNumber = "Enter your phone number.";
+  else if (!PHONE_PATTERN.test(values.phoneNumber.trim())) errors.phoneNumber = "Use digits only, for example 082 123 4567.";
+  if (!values.password) errors.password = "Choose a password.";
+  else if (values.password.length < 6) errors.password = "Use at least 6 characters.";
+  if (!values.confirmPassword) errors.confirmPassword = "Type your password again.";
+  else if (values.password !== values.confirmPassword) errors.confirmPassword = "The passwords don't match.";
+  return errors;
+}
 
 function Register() {
   const navigate = useNavigate();
+  const toast = useToast();
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [values, setValues] = useState<Values>(EMPTY);
+  const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState("");
+
+  const errors = validate(values);
+  const strength = passwordStrength(values.password);
+
+  const fieldProps = (name: FieldName) => ({
+    id: name,
+    value: values[name],
+    onChange: (value: string) => setValues((prev) => ({ ...prev, [name]: value })),
+    onBlur: () => setTouched((prev) => ({ ...prev, [name]: true })),
+    error: submitted || touched[name] ? errors[name] : undefined,
+  });
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-  event.preventDefault();
+    event.preventDefault();
+    setSubmitted(true);
+    setServerError("");
 
-    setError("");
-    setSuccess("");
+    if (Object.keys(errors).length > 0) return;
 
-    if (
-      !firstName ||
-      !lastName ||
-      !email ||
-      !phoneNumber ||
-      !password ||
-      !confirmPassword
-    ) {
-      setError("Please complete all required fields.");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
+    const student = {
+      firstName: values.firstName.trim(),
+      lastName: values.lastName.trim(),
+      email: values.email.trim(),
+      phoneNumber: values.phoneNumber.trim(),
+    };
 
     try {
-      await createStudent({
-        firstName,
-        lastName,
-        email,
-        phoneNumber,
-        password,
-      });
-      
-      setSuccess("Registration successful. Redirecting to login...");
-      
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500);
+      setSubmitting(true);
+      const created = await createStudent({ ...student, password: values.password });
+      const studentId = typeof created?.studentId === "number" ? created.studentId : undefined;
+      saveSession({ ...student, studentId });
+      toast.success("Account created. Log in to continue.");
+      navigate("/login");
     } catch (error) {
-      setError(
-        error instanceof Error
-      ? error.message
-      : "Registration failed. Please try again."
-    );
-  }
+      setServerError(friendlyError(error, "We couldn't create your account. Try again."));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <div>
-      <h1>Student Registration</h1>
+    <AuthLayout>
+      <h2>Create your account</h2>
+      <p className="muted">It takes a minute, then you can book a machine.</p>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="firstName">First Name</label>
-          <br />
-          <input
-            id="firstName"
-            type="text"
-            value={firstName}
-            onChange={(event) => setFirstName(event.target.value)}
-            placeholder="Enter your first name"
-          />
+      <form className="stack" onSubmit={handleSubmit} noValidate>
+        {serverError && (
+          <div className="alert alert-error" role="alert">
+            {serverError}
+          </div>
+        )}
+
+        <div className="form-grid">
+          <TextField label="First name" autoComplete="given-name" {...fieldProps("firstName")} />
+          <TextField label="Last name" autoComplete="family-name" {...fieldProps("lastName")} />
+          <TextField className="span-2" label="Email" type="email" autoComplete="email" placeholder="you@university.ac.za" {...fieldProps("email")} />
+          <TextField className="span-2" label="Phone number" type="tel" autoComplete="tel" placeholder="082 123 4567" {...fieldProps("phoneNumber")} />
+          <div className="span-2">
+            <TextField label="Password" type="password" autoComplete="new-password" hint="At least 6 characters." {...fieldProps("password")} />
+            {values.password && (
+              <div className="row small muted" style={{ marginTop: 8 }}>
+                <div className="strength" data-level={strength} style={{ flex: 1 }} aria-hidden="true">
+                  <span /><span /><span /><span />
+                </div>
+                <span aria-live="polite">{STRENGTH_LABEL[strength]}</span>
+              </div>
+            )}
+          </div>
+          <TextField className="span-2" label="Confirm password" type="password" autoComplete="new-password" {...fieldProps("confirmPassword")} />
         </div>
 
-        <br />
-
-        <div>
-          <label htmlFor="lastName">Last Name</label>
-          <br />
-          <input
-            id="lastName"
-            type="text"
-            value={lastName}
-            onChange={(event) => setLastName(event.target.value)}
-            placeholder="Enter your last name"
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label htmlFor="email">Email</label>
-          <br />
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="Enter your email"
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label htmlFor="phoneNumber">Phone Number</label>
-          <br />
-          <input
-            id="phoneNumber"
-            type="tel"
-            value={phoneNumber}
-            onChange={(event) => setPhoneNumber(event.target.value)}
-            placeholder="Enter your phone number"
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label htmlFor="password">Password</label>
-          <br />
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Enter your password"
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label htmlFor="confirmPassword">Confirm Password</label>
-          <br />
-          <input
-            id="confirmPassword"
-            type="password"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            placeholder="Confirm your password"
-          />
-        </div>
-
-        <br />
-
-        {error && <p>{error}</p>}
-        {success && <p>{success}</p>}
-
-        <button type="submit">Register</button>
+        <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+          {submitting ? "Creating account..." : "Create account"}
+        </button>
       </form>
 
-      <p>
-        Already have an account?{" "}
-        <Link to="/login">Login here</Link>
+      <p className="auth-foot">
+        Already registered? <Link to="/login">Log in</Link>
       </p>
-    </div>
+    </AuthLayout>
   );
 }
 

@@ -1,6 +1,6 @@
-import { NotificationItem } from '../types/notification';
+import type { NotificationItem } from '../types/notification';
 
-const BASE_URL = process.env.REACT_APP_API_BASE_URL || '/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {

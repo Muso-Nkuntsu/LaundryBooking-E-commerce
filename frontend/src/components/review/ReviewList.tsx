@@ -1,127 +1,132 @@
-import React, { useEffect, useState } from 'react';
-import { Review, ReviewSummary } from '../../types/review';
-import { reviewService } from '../services/reviewService';
-import { Rating } from './Rating';
-import { ReviewForm } from './ReviewForm';
+import React, { useState } from "react";
+import type { Review, ReviewSummary } from "../../types/review";
+import { reviewService } from "../../services/reviewServices";
+import { Rating } from "./Rating";
+import { ReviewForm } from "./ReviewForm";
+import ConfirmDialog from "../common/ConfirmDialog";
+import { ErrorState, Loading } from "../common/States";
+import { useFetch } from "../../hooks/useFetch";
+import { useToast } from "../../context/useToast";
+import { friendlyError } from "../../utilis/errorMessage";
 
 interface ReviewListProps {
   currentUserId?: string;
 }
 
+interface ReviewData {
+  reviews: Review[];
+  summary: ReviewSummary | null;
+}
+
 export const ReviewList: React.FC<ReviewListProps> = ({ currentUserId }) => {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [summary, setSummary] = useState<ReviewSummary | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
+  const [toDelete, setToDelete] = useState<Review | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    loadReviewData();
-  }, []);
-
-  const loadReviewData = async () => {
+  const { data, loading, error, reload, setData } = useFetch<ReviewData>(async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const [reviewsData, summaryData] = await Promise.all([
-        reviewService.fetchReviews(),
-        reviewService.fetchReviewSummary()
-      ]);
-      setReviews(reviewsData);
-      setSummary(summaryData);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load reviews');
-    } finally {
-      setLoading(false);
+      const [reviews, summary] = await Promise.all([reviewService.fetchReviews(), reviewService.fetchReviewSummary()]);
+      return { reviews: Array.isArray(reviews) ? reviews : [], summary };
+    } catch (err) {
+      throw new Error(friendlyError(err, "We couldn't load the reviews."));
     }
+  });
+
+  const refreshSummary = async () => {
+    const summary = await reviewService.fetchReviewSummary();
+    setData((prev) => (prev ? { ...prev, summary } : prev));
   };
 
   const handleCreateReview = async (payload: { rating: number; comment: string }) => {
     const newReview = await reviewService.createReview(payload);
-    setReviews((prev) => [newReview, ...prev]);
-    const updatedSummary = await reviewService.fetchReviewSummary();
-    setSummary(updatedSummary);
+    setData((prev) => (prev ? { ...prev, reviews: [newReview, ...prev.reviews] } : prev));
+    toast.success("Review posted.");
+    await refreshSummary().catch(() => undefined);
   };
 
-  const handleDeleteReview = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this review?')) return;
-
+  const handleDeleteReview = async () => {
+    if (!toDelete) return;
     try {
-      await reviewService.deleteReview(id);
-      setReviews((prev) => prev.filter((r) => r.id !== id));
-      const updatedSummary = await reviewService.fetchReviewSummary();
-      setSummary(updatedSummary);
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete review');
+      setDeleting(true);
+      await reviewService.deleteReview(toDelete.id);
+      setData((prev) => (prev ? { ...prev, reviews: prev.reviews.filter((r) => r.id !== toDelete.id) } : prev));
+      toast.success("Review deleted.");
+      setToDelete(null);
+      await refreshSummary().catch(() => undefined);
+    } catch (err) {
+      toast.error(friendlyError(err, "We couldn't delete that review."));
+    } finally {
+      setDeleting(false);
     }
   };
 
-  if (loading) return <div className="p-6 text-center text-gray-500">Loading reviews...</div>;
-  if (error) return <div className="p-6 text-center text-red-600">{error}</div>;
+  if (loading) return <Loading message="Loading reviews..." />;
+  if (error || !data) return <ErrorState message={error ?? "We couldn't load the reviews."} onRetry={reload} />;
+
+  const { reviews, summary } = data;
 
   return (
-    <div className="max-w-3xl mx-auto p-4 space-y-6">
+    <div className="stack">
       {summary && (
-        <div className="flex items-center gap-6 p-4 bg-white shadow rounded-lg">
-          <div className="text-center border-r pr-6">
-            <div className="text-4xl font-bold text-gray-900">
-              {summary.averageRating.toFixed(1)}
-            </div>
+        <section className="card row" style={{ flexWrap: "wrap", gap: 24 }}>
+          <div style={{ textAlign: "center" }}>
+            <div className="score">{summary.averageRating.toFixed(1)}</div>
             <Rating value={Math.round(summary.averageRating)} readOnly size="sm" />
-            <div className="text-xs text-gray-500 mt-1">{summary.totalReviews} reviews</div>
+            <div className="small muted">{summary.totalReviews} reviews</div>
           </div>
-          <div className="flex-1 space-y-1">
+          <div className="bars">
             {([5, 4, 3, 2, 1] as const).map((star) => {
-              const count = summary.ratingDistribution[star] || 0;
+              const count = summary.ratingDistribution?.[star] || 0;
               const percentage = summary.totalReviews > 0 ? (count / summary.totalReviews) * 100 : 0;
               return (
-                <div key={star} className="flex items-center text-xs text-gray-600 gap-2">
-                  <span className="w-3">{star}★</span>
-                  <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
-                    <div className="bg-amber-400 h-full" style={{ width: `${percentage}%` }} />
-                  </div>
-                  <span className="w-8 text-right">{count}</span>
+                <div key={star} className="bar">
+                  <span>{star}★</span>
+                  <i><b style={{ width: `${percentage}%` }} /></i>
+                  <span style={{ textAlign: "right" }}>{count}</span>
                 </div>
               );
             })}
           </div>
-        </div>
+        </section>
       )}
 
       <ReviewForm onSubmit={handleCreateReview} />
 
-      <div className="space-y-4">
-        <h3 className="text-lg font-bold text-gray-800">Student Feedback</h3>
-        {reviews.length === 0 ? (
-          <p className="text-gray-500 text-sm">No reviews yet. Be the first to leave one!</p>
-        ) : (
-          reviews.map((review) => (
-            <div key={review.id} className="p-4 bg-white shadow-sm rounded-lg border border-gray-100">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="font-semibold text-gray-900 text-sm">{review.userName}</span>
-                  <div className="mt-1">
-                    <Rating value={review.rating} readOnly size="sm" />
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-400">
-                    {new Date(review.createdAt).toLocaleDateString()}
-                  </span>
-                  {currentUserId === review.userId && (
-                    <button
-                      onClick={() => handleDeleteReview(review.id)}
-                      className="text-xs text-red-500 hover:text-red-700 font-medium"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
+      <h2 style={{ marginTop: 8 }}>What students say</h2>
+      {reviews.length === 0 ? (
+        <p className="muted">No reviews yet. Yours can be the first.</p>
+      ) : (
+        reviews.map((review) => (
+          <article key={review.id} className="card" style={{ margin: 0 }}>
+            <div className="row" style={{ alignItems: "flex-start" }}>
+              <div>
+                <strong>{review.userName}</strong>
+                <div><Rating value={review.rating} readOnly size="sm" /></div>
               </div>
-              <p className="mt-2 text-sm text-gray-700">{review.comment}</p>
+              <div className="row small muted">
+                {new Date(review.createdAt).toLocaleDateString("en-ZA", { dateStyle: "medium" })}
+                {currentUserId === review.userId && (
+                  <button type="button" className="link-btn" style={{ color: "var(--peg)" }} onClick={() => setToDelete(review)}>
+                    Delete
+                  </button>
+                )}
+              </div>
             </div>
-          ))
-        )}
-      </div>
+            <p style={{ marginTop: 10 }}>{review.comment}</p>
+          </article>
+        ))
+      )}
+
+      {toDelete && (
+        <ConfirmDialog
+          title="Delete your review?"
+          message="This removes it for everyone and can't be undone."
+          confirmLabel="Delete review"
+          busy={deleting}
+          onConfirm={handleDeleteReview}
+          onCancel={() => setToDelete(null)}
+        />
+      )}
     </div>
   );
 };

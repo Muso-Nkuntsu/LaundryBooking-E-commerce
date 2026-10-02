@@ -1,88 +1,78 @@
 import { useState } from "react";
-import type { FormEvent} from "react";
+import type { FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import TextField from "../../components/common/TextField";
+import { clearSession, getInitials, getSession, saveSession } from "../../services/session";
+import { useToast } from "../../context/useToast";
+
+type FieldName = "firstName" | "lastName" | "email" | "phoneNumber";
 
 function Profile() {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
+  const toast = useToast();
+  const [session] = useState(getSession);
+
+  const [values, setValues] = useState<Record<FieldName, string>>({
+    firstName: session?.firstName ?? "",
+    lastName: session?.lastName ?? "",
+    email: session?.email ?? "",
+    phoneNumber: session?.phoneNumber ?? "",
+  });
+  const [submitted, setSubmitted] = useState(false);
+
+  const errors: Partial<Record<FieldName, string>> = {};
+  if (!values.firstName.trim()) errors.firstName = "Enter your first name.";
+  if (!values.lastName.trim()) errors.lastName = "Enter your last name.";
+  if (!values.email.trim()) errors.email = "Enter your email address.";
+  if (!values.phoneNumber.trim()) errors.phoneNumber = "Enter your phone number.";
+
+  const fieldProps = (name: FieldName) => ({
+    id: name,
+    value: values[name],
+    onChange: (value: string) => setValues((prev) => ({ ...prev, [name]: value })),
+    error: submitted ? errors[name] : undefined,
+  });
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitted(true);
+    if (Object.keys(errors).length > 0) return;
 
-    if (!firstName || !lastName || !email || !phoneNumber) {
-      setMessage("Please complete all required fields.");
-      return;
-    }
+    // Saved on this device only until the backend has an update-student endpoint.
+    saveSession({ ...session, ...values });
+    toast.success("Changes saved.");
+  };
 
-    setMessage("Profile updated successfully.");
+  const handleLogout = () => {
+    clearSession();
+    navigate("/login");
   };
 
   return (
-    <div>
-      <h1>Student Profile</h1>
-
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="firstName">First Name</label>
-          <br />
-          <input
-            id="firstName"
-            type="text"
-            value={firstName}
-            onChange={(event) => setFirstName(event.target.value)}
-            placeholder="Enter your first name"
-          />
+    <div className="page narrow">
+      <header className="page-head">
+        <div className="row" style={{ justifyContent: "flex-start", gap: 16 }}>
+          <span className="avatar" style={{ width: 60, height: 60, fontSize: "1.3rem" }} aria-hidden="true">
+            {getInitials()}
+          </span>
+          <div>
+            <h1>Your profile</h1>
+            <p>Keep your contact details current so booking reminders reach you.</p>
+          </div>
         </div>
+      </header>
 
-        <br />
-
-        <div>
-          <label htmlFor="lastName">Last Name</label>
-          <br />
-          <input
-            id="lastName"
-            type="text"
-            value={lastName}
-            onChange={(event) => setLastName(event.target.value)}
-            placeholder="Enter your last name"
-          />
+      <form className="card stack" onSubmit={handleSubmit} noValidate>
+        <div className="form-grid">
+          <TextField label="First name" autoComplete="given-name" {...fieldProps("firstName")} />
+          <TextField label="Last name" autoComplete="family-name" {...fieldProps("lastName")} />
+          <TextField className="span-2" label="Email" type="email" autoComplete="email" {...fieldProps("email")} />
+          <TextField className="span-2" label="Phone number" type="tel" autoComplete="tel" {...fieldProps("phoneNumber")} />
         </div>
-
-        <br />
-
-        <div>
-          <label htmlFor="email">Email</label>
-          <br />
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="Enter your email"
-          />
+        <div className="btn-row">
+          <button type="submit" className="btn btn-primary">Save changes</button>
+          <button type="button" className="btn btn-ghost" onClick={handleLogout}>Log out</button>
         </div>
-
-        <br />
-
-        <div>
-          <label htmlFor="phoneNumber">Phone Number</label>
-          <br />
-          <input
-            id="phoneNumber"
-            type="tel"
-            value={phoneNumber}
-            onChange={(event) => setPhoneNumber(event.target.value)}
-            placeholder="Enter your phone number"
-          />
-        </div>
-
-        <br />
-
-        {message && <p>{message}</p>}
-
-        <button type="submit">Save Changes</button>
       </form>
     </div>
   );

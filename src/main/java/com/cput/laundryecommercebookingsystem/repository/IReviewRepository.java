@@ -14,7 +14,7 @@ public interface IReviewRepository extends JpaRepository<Review, Long> {
 
     List<Review> findByStudentStudentId(Long studentId);
 
-    List<Review> findByLaundryServiceServiceId(Long serviceId);
+    List<Review> findByLaundryService(Long serviceId);
 
     List<Review> findByRating(int rating);
 }

@@ -1,67 +1,85 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Product } from "../../types/Product";
+import { EmptyState, ErrorState, SkeletonGrid } from "../../components/common/States";
+import Icon from "../../components/common/Icon";
+import { useFetch } from "../../hooks/useFetch";
+import { useToast } from "../../context/useToast";
 import { getAllProducts } from "../../services/productService";
+import { friendlyError } from "../../utilis/errorMessage";
+import { formatCurrency } from "../../utilis/FormatCurrency";
 
 function Products() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const toast = useToast();
+  const { data, loading, error, reload } = useFetch(() =>
+    getAllProducts().catch((err: unknown) => {
+      throw new Error(friendlyError(err, "We couldn't load the products."));
+    }),
+  );
+  const products = data ?? [];
 
-  useEffect(() => {
-    getAllProducts()
-      .then(setProducts)
-      .catch(() => setError("Unable to load products. Please try again."))
-      .finally(() => setLoading(false));
-  }, []);
+  const [category, setCategory] = useState("All");
+  const categories = ["All", ...Array.from(new Set(products.map((product) => product.category || "Laundry")))];
+  const visible = category === "All" ? products : products.filter((product) => (product.category || "Laundry") === category);
 
   const handleAdd = (product: Product) => {
     if (product.inventoryQuantity <= 0) return;
-    (product);
-    setMessage(`${product.name} added to your cart.`);
-    window.setTimeout(() => setMessage(""), 2500);
+    // The cart isn't connected to the backend yet; this only confirms the click.
+    toast.success(`${product.name} added to your cart.`);
   };
 
   return (
-    <main className="page-shell">
-      <div className="page-heading">
+    <div className="page">
+      <header className="page-head">
         <div>
-          <p className="eyebrow">LAUNDRY SHOP</p>
-          <h1>Products</h1>
-          <p>Browse approved laundry products and add them to your cart.</p>
+          <h1>Shop</h1>
+          <p>Detergent, softener and other laundry supplies to collect with your wash.</p>
         </div>
-        <Link className="secondary-button" to="/dashboard">Dashboard</Link>
-      </div>
+        <Link to="/order-items" className="btn btn-ghost">My orders</Link>
+      </header>
 
-      {message && <div className="toast">{message}</div>}
-      {loading && <div className="state-card">Loading products...</div>}
-      {error && <div className="state-card error">{error}</div>}
-      {!loading && !error && products.length === 0 && <div className="state-card">No products are available.</div>}
+      {loading && <SkeletonGrid count={6} height={300} />}
+      {!loading && error && <ErrorState message={error} onRetry={reload} />}
+      {!loading && !error && products.length === 0 && (
+        <EmptyState title="Nothing in the shop yet" message="Products will appear here once they are added." />
+      )}
 
-      <section className="card-grid product-grid">
-        {products.map((product) => (
-          <article className="feature-card product-card" key={product.productId}>
-            <div className="product-image">Laundry Product</div>
-            <span className="category-label">{product.category || "Laundry"}</span>
-            <h2>{product.name}</h2>
-            <p>{product.description || "Laundry product for student use."}</p>
-            <div className="price">R{product.price.toFixed(2)}</div>
-            <p className={product.inventoryQuantity > 0 ? "stock available-text" : "stock unavailable-text"}>
-              {product.inventoryQuantity > 0 ? `${product.inventoryQuantity} in stock` : "Out of stock"}
-            </p>
-            <div className="button-row">
-              <Link className="secondary-button" to={`/products/${encodeURIComponent(product.productId)}`}>
-                Details
-              </Link>
-              <button className="primary-button" disabled={product.inventoryQuantity <= 0} onClick={() => handleAdd(product)}>
-                Add to Cart
-              </button>
-            </div>
-          </article>
-        ))}
+      {categories.length > 2 && (
+        <div className="segmented" role="group" aria-label="Filter by category" style={{ marginBottom: 18 }}>
+          {categories.map((name) => (
+            <button key={name} type="button" aria-pressed={category === name} onClick={() => setCategory(name)}>
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <section className="grid grid-3">
+        {visible.map((product) => {
+          const inStock = product.inventoryQuantity > 0;
+          return (
+            <article className="card tile hoverable" key={product.productId}>
+              <div className="product-art" aria-hidden="true"><Icon name="bag" size={44} /></div>
+              <span className="muted small">{product.category || "Laundry"}</span>
+              <h2>{product.name}</h2>
+              <p className="muted">{product.description || "Laundry product for student use."}</p>
+              <div className="row">
+                <span className="price">{formatCurrency(product.price)}</span>
+                <span className={`pill ${inStock ? "pill-ok" : "pill-bad"}`}>{inStock ? `${product.inventoryQuantity} in stock` : "Out of stock"}</span>
+              </div>
+              <div className="btn-row push">
+                <Link className="btn btn-ghost btn-sm" to={`/products/${encodeURIComponent(product.productId)}`}>
+                  Details
+                </Link>
+                <button type="button" className="btn btn-primary btn-sm" style={{ flex: 1 }} disabled={!inStock} onClick={() => handleAdd(product)}>
+                  Add to cart
+                </button>
+              </div>
+            </article>
+          );
+        })}
       </section>
-    </main>
+    </div>
   );
 }
 

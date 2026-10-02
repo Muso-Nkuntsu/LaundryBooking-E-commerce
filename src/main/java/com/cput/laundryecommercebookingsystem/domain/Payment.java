@@ -37,7 +37,7 @@ public class Payment {
     private Long orderId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @Column(name = "service_id", nullable = false)
+    @JoinColumn(name = "service_id", nullable = false)
     private LaundryService service;
 
     protected Payment() {}

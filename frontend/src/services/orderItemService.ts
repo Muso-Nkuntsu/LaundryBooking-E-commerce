@@ -1,10 +1,10 @@
-import type { orderItem } from "../types/orderItem";
+import type { OrderItem } from "../types/orderItem";
 
 const API_BASE_URL = "http://localhost:8080";
 
 export const orderItemService = {
 
-  async getAllOrderItems(): Promise<orderItem[]> {
+  async getAllOrderItems(): Promise<OrderItem[]> {
     const response = await fetch(
       `${API_BASE_URL}/order-item/getall`
     );
