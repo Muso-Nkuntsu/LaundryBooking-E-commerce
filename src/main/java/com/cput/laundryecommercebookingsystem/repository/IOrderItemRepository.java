@@ -6,6 +6,7 @@ import com.cput.laundryecommercebookingsystem.domain.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
@@ -14,6 +15,7 @@ import java.util.List;
  * Date: 28 July 2026
  */
 
+@Repository
 public interface IOrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     List<OrderItem> findByOrder(Order order);

@@ -8,9 +8,11 @@ import com.cput.laundryecommercebookingsystem.domain.Student;
 import com.cput.laundryecommercebookingsystem.domain.enums.NotificationType;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface iNotificationRepository extends JpaRepository<Notification, Long> {
 
     List<Notification> findByStudent(Student student);
