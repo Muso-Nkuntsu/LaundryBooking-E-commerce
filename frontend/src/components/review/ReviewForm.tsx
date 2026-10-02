@@ -1,22 +1,31 @@
 import React, { useState } from "react";
 import { Rating } from "./Rating";
-import type { CreateReviewPayload } from "../../types/review";
+import type { LaundryService } from "../../types/LaundryService";
 import { friendlyError } from "../../utilis/errorMessage";
 
+export interface ReviewFormValues {
+  serviceId: number;
+  rating: number;
+  comment: string;
+}
+
 interface ReviewFormProps {
-  onSubmit: (payload: CreateReviewPayload) => Promise<void>;
+  services: LaundryService[];
+  onSubmit: (values: ReviewFormValues) => Promise<void>;
 }
 
 const MIN_LENGTH = 10;
 
-export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
+export const ReviewForm: React.FC<ReviewFormProps> = ({ services, onSubmit }) => {
+  const [serviceId, setServiceId] = useState<string>("");
   const [rating, setRating] = useState<number>(0);
   const [comment, setComment] = useState<string>("");
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const errors: { rating?: string; comment?: string } = {};
+  const errors: { serviceId?: string; rating?: string; comment?: string } = {};
+  if (!serviceId) errors.serviceId = "Choose the service you are reviewing.";
   if (rating === 0) errors.rating = "Choose a star rating.";
   if (!comment.trim()) errors.comment = "Write a few words about your experience.";
   else if (comment.trim().length < MIN_LENGTH) errors.comment = `Write at least ${MIN_LENGTH} characters.`;
@@ -30,7 +39,8 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
 
     try {
       setIsSubmitting(true);
-      await onSubmit({ rating, comment: comment.trim() });
+      await onSubmit({ serviceId: Number(serviceId), rating, comment: comment.trim() });
+      setServiceId("");
       setRating(0);
       setComment("");
       setSubmitted(false);
@@ -41,11 +51,37 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit }) => {
     }
   };
 
+  if (services.length === 0) {
+    return (
+      <div className="card">
+        <h2>Leave a review</h2>
+        <p className="muted" style={{ marginTop: 8 }}>Reviews open once laundry services have been added.</p>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="card stack" noValidate>
       <h2>Leave a review</h2>
 
       {serverError && <div className="alert alert-error" role="alert">{serverError}</div>}
+
+      <div className="field">
+        <label htmlFor="review-service">Service</label>
+        <select
+          id="review-service"
+          className="input"
+          value={serviceId}
+          onChange={(e) => setServiceId(e.target.value)}
+          aria-invalid={submitted && errors.serviceId ? true : undefined}
+        >
+          <option value="">Choose a service</option>
+          {services.map((service) => (
+            <option key={service.id} value={service.id}>{service.name}</option>
+          ))}
+        </select>
+        {submitted && errors.serviceId && <span className="field-error">{errors.serviceId}</span>}
+      </div>
 
       <div className="field">
         <span style={{ fontWeight: 600, fontSize: "0.925rem" }}>Your rating</span>

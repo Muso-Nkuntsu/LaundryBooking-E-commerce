@@ -6,7 +6,7 @@ import Icon from "../common/Icon";
 import type { IconName } from "../common/Icon";
 import { useFetch } from "../../hooks/useFetch";
 import { notificationService } from "../../services/notificationService";
-import { clearSession, getInitials } from "../../services/session";
+import { clearSession, getInitials, getStudentId } from "../../services/session";
 
 const NAV: { to: string; label: string }[] = [
   { to: "/dashboard", label: "Home" },
@@ -31,7 +31,7 @@ function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   // The bell is a nice-to-have: if notifications can't load, it just shows no count.
-  const { data: notifications } = useFetch(() => notificationService.fetchNotifications());
+  const { data: notifications } = useFetch(() => notificationService.fetchNotifications(getStudentId()));
   const unread = Array.isArray(notifications) ? notifications.filter((item) => !item.isRead).length : 0;
 
   const handleLogout = () => {

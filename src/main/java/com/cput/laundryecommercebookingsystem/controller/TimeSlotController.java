@@ -32,6 +32,21 @@ public class TimeSlotController {
     public ResponseEntity<List<TimeSlot>> getAllTimeSlots() {
         return ResponseEntity.ok(timeSlotService.getAllTimeSlots());
     }
+    /** Slots from today onwards: GET /timeslot/upcoming?days=7 */
+    @GetMapping("/upcoming")
+    public ResponseEntity<List<TimeSlot>> getUpcomingTimeSlots(@RequestParam(defaultValue = "7") int days) {
+        return ResponseEntity.ok(timeSlotService.getUpcomingTimeSlots(days));
+    }
+    /** Slots on one date: GET /timeslot/date/2026-10-05 */
+    @GetMapping("/date/{date}")
+    public ResponseEntity<List<TimeSlot>> getTimeSlotsByDate(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(timeSlotService.getTimeSlotsByDate(date));
+    }
+    @GetMapping("/available")
+    public ResponseEntity<List<TimeSlot>> getAvailableTimeSlots() {
+        return ResponseEntity.ok(timeSlotService.getAvailableTimeSlots());
+    }
     @GetMapping("/{id}")
     public ResponseEntity<TimeSlot> getTimeSlotById(@PathVariable Long id) {
         Optional<TimeSlot> timeSlot = timeSlotService.getTimeSlotById(id);

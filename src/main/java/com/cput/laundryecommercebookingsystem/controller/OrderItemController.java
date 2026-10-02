@@ -66,6 +66,20 @@ public class OrderItemController {
         return ResponseEntity.ok(true);
     }
 
+    /** Items of one order: GET /order-item/order/12 */
+    @GetMapping("/order/{orderId}")
+    public ResponseEntity<List<OrderItem>> getByOrder(@PathVariable Long orderId) {
+
+        return ResponseEntity.ok(orderItemService.getOrderItemsByOrderId(orderId));
+    }
+
+    /** Everything one student has ordered: GET /order-item/student/1 */
+    @GetMapping("/student/{studentId}")
+    public ResponseEntity<List<OrderItem>> getByStudent(@PathVariable Long studentId) {
+
+        return ResponseEntity.ok(orderItemService.getOrderItemsByStudentId(studentId));
+    }
+
     @GetMapping("/getall")
     public ResponseEntity<List<OrderItem>> getAll() {
 

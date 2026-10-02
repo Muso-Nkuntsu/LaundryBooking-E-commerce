@@ -36,8 +36,8 @@ public class Payment {
     @Column(name = "order_id")
     private Long orderId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "service_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "service_id") // optional: a payment can be for a booking or an order only
     private LaundryService service;
 
     protected Payment() {}

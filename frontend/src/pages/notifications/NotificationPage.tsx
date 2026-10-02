@@ -7,7 +7,7 @@ export const NotificationsPage: React.FC = () => {
       <header className="page-head">
         <div>
           <h1>Notifications</h1>
-          <p>Booking confirmations, reminders and order updates.</p>
+          <p>Updates about your bookings, orders and payments.</p>
         </div>
       </header>
       <NotificationList />

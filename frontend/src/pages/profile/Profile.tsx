@@ -3,6 +3,8 @@ import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import TextField from "../../components/common/TextField";
 import { clearSession, getInitials, getSession, saveSession } from "../../services/session";
+import { updateStudent } from "../../services/studentService";
+import { friendlyError } from "../../utilis/errorMessage";
 import { useToast } from "../../context/useToast";
 
 type FieldName = "firstName" | "lastName" | "email" | "phoneNumber";
@@ -19,6 +21,7 @@ function Profile() {
     phoneNumber: session?.phoneNumber ?? "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const errors: Partial<Record<FieldName, string>> = {};
   if (!values.firstName.trim()) errors.firstName = "Enter your first name.";
@@ -33,14 +36,27 @@ function Profile() {
     error: submitted ? errors[name] : undefined,
   });
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitted(true);
-    if (Object.keys(errors).length > 0) return;
+    if (Object.keys(errors).length > 0 || !session) return;
 
-    // Saved on this device only until the backend has an update-student endpoint.
-    saveSession({ ...session, ...values });
-    toast.success("Changes saved.");
+    try {
+      setSaving(true);
+      const updated = await updateStudent({
+        studentId: session.studentId,
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+        email: values.email.trim(),
+        phoneNumber: values.phoneNumber.trim(),
+      });
+      saveSession(updated);
+      toast.success("Changes saved.");
+    } catch (error) {
+      toast.error(friendlyError(error, "We couldn't save your changes. Try again."));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleLogout = () => {
@@ -70,7 +86,7 @@ function Profile() {
           <TextField className="span-2" label="Phone number" type="tel" autoComplete="tel" {...fieldProps("phoneNumber")} />
         </div>
         <div className="btn-row">
-          <button type="submit" className="btn btn-primary">Save changes</button>
+          <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Saving..." : "Save changes"}</button>
           <button type="button" className="btn btn-ghost" onClick={handleLogout}>Log out</button>
         </div>
       </form>

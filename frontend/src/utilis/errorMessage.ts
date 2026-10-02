@@ -7,7 +7,7 @@ export function friendlyError(error: unknown, fallback: string): string {
       response?: { status?: number; data?: unknown };
     };
 
-    // The server answered with an error (axios).
+    // The server answered with an error, in the shape some HTTP libraries use.
     if (maybe.response) {
       const data = maybe.response.data;
       if (typeof data === "string" && data.trim()) return data;

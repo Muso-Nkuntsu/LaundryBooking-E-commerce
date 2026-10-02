@@ -10,33 +10,44 @@ function statusText(status: string): string {
 interface MachineDoorProps {
   machine: LaundryMachine;
   selected?: boolean;
+  /** Makes the door a button. */
   onSelect?: (machine: LaundryMachine) => void;
+  /** When choosing a machine for a time slot: whether it can be booked for that slot. */
+  bookable?: boolean;
+  /** Shown in place of the status when the machine can't be booked for the slot. */
+  unavailableLabel?: string;
 }
 
-/** One machine, drawn as its door. Clickable when `onSelect` is given. */
-function MachineDoor({ machine, selected = false, onSelect }: MachineDoorProps) {
-  const available = isMachineAvailable(machine);
-  const inUse = /USE|BUSY|RUNNING|BOOKED/i.test(machine.status ?? "");
-  const drum = <Drum state={available ? "idle" : inUse ? "spinning" : "off"} />;
+/** One machine, drawn as its door. */
+function MachineDoor({ machine, selected = false, onSelect, bookable, unavailableLabel }: MachineDoorProps) {
+  const outOfOrder = machine.status === "OUT_OF_ORDER";
+  const inUse = machine.status === "IN_USE";
+
+  // On the booking screen "free" means free for the chosen slot; elsewhere it means free right now.
+  const choosing = bookable !== undefined;
+  const free = choosing ? bookable : isMachineAvailable(machine);
+  const label = choosing ? (free ? "Free" : unavailableLabel ?? statusText(machine.status)) : statusText(machine.status);
+  const pill = free ? "pill-ok" : outOfOrder ? "pill-off" : "pill-warn";
+  const drumState = outOfOrder ? "off" : !choosing && inUse ? "spinning" : !free && choosing ? "off" : "idle";
 
   const body = (
     <>
-      {drum}
+      <Drum state={drumState} />
       <strong>{machine.machineNumber}</strong>
       <span className="muted small">{machine.type}</span>
-      <span className={`pill ${available ? "pill-ok" : inUse ? "pill-warn" : "pill-off"}`}>{statusText(machine.status)}</span>
+      {(!choosing || unavailableLabel !== undefined || free) && <span className={`pill ${pill}`}>{label}</span>}
     </>
   );
 
   if (!onSelect) {
-    return <div className={`machine ${available ? "" : "off"}`}>{body}</div>;
+    return <div className={`machine ${free ? "" : "off"}`}>{body}</div>;
   }
 
   return (
     <button
       type="button"
       className={`machine ${selected ? "selected" : ""}`}
-      disabled={!available}
+      disabled={!free}
       aria-pressed={selected}
       onClick={() => onSelect(machine)}
     >

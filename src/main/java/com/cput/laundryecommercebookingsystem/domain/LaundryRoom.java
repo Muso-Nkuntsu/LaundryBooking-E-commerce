@@ -1,5 +1,6 @@
 package com.cput.laundryecommercebookingsystem.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -83,6 +84,9 @@ public class LaundryRoom {
         return isActive;
     }
 
+    // Left out of JSON: each machine already points back to its room, which would loop forever.
+    // Machines are loaded through /laundrymachine/getall instead.
+    @JsonIgnore
     public List<LaundryMachine> getMachines() {
         return Collections.unmodifiableList(machines);
     }
@@ -135,7 +139,7 @@ public class LaundryRoom {
         if (this == o) return true;
         if (!(o instanceof LaundryRoom)) return false;
         LaundryRoom room = (LaundryRoom) o;
-        return roomId == room.roomId;
+        return Objects.equals(roomId, room.roomId);
     }
 
     @Override

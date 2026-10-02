@@ -11,7 +11,6 @@ import com.cput.laundryecommercebookingsystem.service.IReviewService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -97,7 +96,7 @@ public class ReviewServiceImpl implements IReviewService {
             Long serviceId) {
 
         return reviewRepository
-                .findByLaundryService(serviceId);
+                .findByLaundryServiceId(serviceId);
     }
 
     @Override
@@ -127,9 +126,5 @@ public class ReviewServiceImpl implements IReviewService {
                                 "Review not found with id: "
                                         + reviewId
                         ));
-    }
-
-    public Review createReview(long L, long L1, int I, String S, LocalDateTime Date) {
-        return null;
     }
 }

@@ -4,7 +4,6 @@ import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../../components/layout/AuthLayout";
 import TextField from "../../components/common/TextField";
 import { createStudent } from "../../services/studentService";
-import { saveSession } from "../../services/session";
 import { friendlyError } from "../../utilis/errorMessage";
 import { useToast } from "../../context/useToast";
 
@@ -80,11 +79,9 @@ function Register() {
 
     try {
       setSubmitting(true);
-      const created = await createStudent({ ...student, password: values.password });
-      const studentId = typeof created?.studentId === "number" ? created.studentId : undefined;
-      saveSession({ ...student, studentId });
+      await createStudent({ ...student, password: values.password });
       toast.success("Account created. Log in to continue.");
-      navigate("/login");
+      navigate("/login", { state: { email: student.email } });
     } catch (error) {
       setServerError(friendlyError(error, "We couldn't create your account. Try again."));
     } finally {

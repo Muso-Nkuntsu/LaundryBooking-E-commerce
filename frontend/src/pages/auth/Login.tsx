@@ -1,21 +1,28 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthLayout from "../../components/layout/AuthLayout";
 import TextField from "../../components/common/TextField";
-import { getSession, saveSession } from "../../services/session";
+import { saveSession } from "../../services/session";
+import { loginStudent } from "../../services/studentService";
+import { friendlyError } from "../../utilis/errorMessage";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const registeredEmail = (location.state as { email?: string } | null)?.email;
 
-  const [email, setEmail] = useState(() => getSession()?.email ?? "");
+  const [email, setEmail] = useState(registeredEmail ?? "");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [serverError, setServerError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setServerError("");
 
     const next: { email?: string; password?: string } = {};
     if (!email.trim()) next.email = "Enter your email address.";
@@ -25,13 +32,16 @@ function Login() {
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
-    // Temporary login behaviour.
-    // We will replace this with the backend API later.
-    const existing = getSession();
-    if (!existing || existing.email !== email.trim()) {
-      saveSession({ email: email.trim() });
+    try {
+      setSubmitting(true);
+      const student = await loginStudent(email.trim(), password);
+      saveSession(student);
+      navigate("/dashboard");
+    } catch (error) {
+      setServerError(friendlyError(error, "We couldn't log you in. Try again."));
+    } finally {
+      setSubmitting(false);
     }
-    navigate("/dashboard");
   };
 
   return (
@@ -40,6 +50,11 @@ function Login() {
       <p className="muted">Use your student email to see your bookings.</p>
 
       <form className="stack" onSubmit={handleSubmit} noValidate>
+        {serverError && (
+          <div className="alert alert-error" role="alert">
+            {serverError}
+          </div>
+        )}
         <TextField
           id="email"
           label="Email"
@@ -59,8 +74,8 @@ function Login() {
           onChange={setPassword}
           error={errors.password}
         />
-        <button type="submit" className="btn btn-primary btn-block">
-          Log in
+        <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+          {submitting ? "Logging in..." : "Log in"}
         </button>
       </form>
 

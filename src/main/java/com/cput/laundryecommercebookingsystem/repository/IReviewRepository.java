@@ -14,7 +14,8 @@ public interface IReviewRepository extends JpaRepository<Review, Long> {
 
     List<Review> findByStudentStudentId(Long studentId);
 
-    List<Review> findByLaundryService(Long serviceId);
+    // Was findByLaundryService(Long), which compared a LaundryService with a number and failed.
+    List<Review> findByLaundryServiceId(Long serviceId);
 
     List<Review> findByRating(int rating);
 }

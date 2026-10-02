@@ -2,6 +2,7 @@ package com.cput.laundryecommercebookingsystem.controller;
 
 import com.cput.laundryecommercebookingsystem.domain.LaundryMachine;
 import com.cput.laundryecommercebookingsystem.domain.enums.MachineStatus;
+import com.cput.laundryecommercebookingsystem.dto.CreateMachineRequest;
 import com.cput.laundryecommercebookingsystem.service.ILaundryMachineService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,25 +31,27 @@ public class LaundryMachineController {
         this.laundryMachineService = laundryMachineService;
     }
 
+    /**
+     * Example body:
+     * { "machineNumber": "W-01", "type": "Washer", "status": "AVAILABLE", "laundryRoomId": 1 }
+     */
     @PostMapping("/create")
-    public ResponseEntity<LaundryMachine> createMachine(
-            @RequestParam String machineNumber,
-            @RequestParam String type,
-            @RequestParam MachineStatus status,
-            @RequestParam Long laundryRoomId) {
-        try {
-            LaundryMachine createdMachine = laundryMachineService.createMachine(
-                    machineNumber, type, status, laundryRoomId);
-            return new ResponseEntity<>(createdMachine, HttpStatus.CREATED);
-        } catch (NoSuchElementException | IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<LaundryMachine> createMachine(@RequestBody CreateMachineRequest request) {
+        LaundryMachine createdMachine = laundryMachineService.createMachine(
+                request.machineNumber(), request.type(), request.status(), request.laundryRoomId());
+        return new ResponseEntity<>(createdMachine, HttpStatus.CREATED);
+    }
+
+    /** Machines that can still be booked for a time slot: GET /laundrymachine/available?timeSlotId=3 */
+    @GetMapping("/available")
+    public ResponseEntity<List<LaundryMachine>> getAvailableMachines(@RequestParam Long timeSlotId) {
+        return ResponseEntity.ok(laundryMachineService.getAvailableMachines(timeSlotId));
     }
 
     @PatchMapping("/update-status/{machineId}")
     public ResponseEntity<LaundryMachine> updateMachineStatus(
             @PathVariable Long machineId,
-            @RequestParam MachineStatus status) {
+            @RequestBody MachineStatus status) {
         try {
             LaundryMachine updatedMachine = laundryMachineService.updateMachineStatus(machineId, status);
             return ResponseEntity.ok(updatedMachine);
