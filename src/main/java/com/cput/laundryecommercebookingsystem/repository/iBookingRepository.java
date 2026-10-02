@@ -14,10 +14,12 @@ import com.cput.laundryecommercebookingsystem.domain.TimeSlot;
 import com.cput.laundryecommercebookingsystem.domain.enums.BookingStatus;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface iBookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByStudent(Student student);
