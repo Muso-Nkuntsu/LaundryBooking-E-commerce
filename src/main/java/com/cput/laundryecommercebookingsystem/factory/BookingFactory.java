@@ -60,7 +60,7 @@ public final class BookingFactory {
                 .status(status)
                 .totalAmount(totalAmount);
 
-        if (laundryService == null) {
+        if (laundryService != null) {
             builder.laundryService(laundryService);
         }
         return builder.build();
@@ -79,8 +79,9 @@ public final class BookingFactory {
         if (timeSlot == null) {
             throw new IllegalArgumentException("Time slot cannot be null");
         }
-        if (totalAmount <= 0) {
-            throw new IllegalArgumentException("Total amount must be a positive value");
+        // A machine booking with no added service costs nothing, so zero is allowed.
+        if (totalAmount < 0) {
+            throw new IllegalArgumentException("Total amount cannot be negative");
         }
     }
 }

@@ -21,10 +21,8 @@ public class ProductFactory {
             return null;
         }
 
-        String productId = UUID.randomUUID().toString();
 
         return new Product.Builder()
-                .setProductId(productId)
                 .setName(name)
                 .setDescription(description)
                 .setPrice(price)

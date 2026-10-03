@@ -15,7 +15,7 @@ import java.util.List;
  * Spring Data JPA Repository interface for LaundryService entity persistence operations.
  */
 @Repository
-public interface ILaundryServiceRepository extends JpaRepository<LaundryService, String> {
+public interface ILaundryServiceRepository extends JpaRepository<LaundryService, Long> {
 
     List<LaundryService> findByServiceNameContainingIgnoreCase(String serviceName);
 }

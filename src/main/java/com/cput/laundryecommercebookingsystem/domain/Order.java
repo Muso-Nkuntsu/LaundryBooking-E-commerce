@@ -1,5 +1,6 @@
 package com.cput.laundryecommercebookingsystem.domain;
 import com.cput.laundryecommercebookingsystem.domain.enums.OrderStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -19,7 +20,7 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_id", nullable = false, updatable = false)
-    private int orderId;
+    private Long orderId;
 
     @Column(name = "order_date", nullable = false)
     private LocalDateTime orderDate;
@@ -31,7 +32,7 @@ public class Order {
     @Column(name = "status", nullable = false, length = 20)
     private OrderStatus status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)
     private Student studentId;
 
@@ -62,7 +63,7 @@ public class Order {
         }
     }
 
-    public int getOrderId() {
+    public Long getOrderId() {
         return orderId;
     }
 
@@ -82,6 +83,9 @@ public class Order {
         return studentId;
     }
 
+    // Left out of JSON: each order item already points back to its order, which would loop forever.
+    // Items are loaded through /order-item/order/{orderId} instead.
+    @JsonIgnore
     public List<OrderItem> getOrderItems() {
         return Collections.unmodifiableList(orderItems);
     }
@@ -116,7 +120,7 @@ public class Order {
         if (this == o) return true;
         if (!(o instanceof Order)) return false;
         Order order = (Order) o;
-        return orderId == order.orderId;
+        return Objects.equals(orderId, order.orderId);
     }
 
     @Override
@@ -137,14 +141,14 @@ public class Order {
     }
 
     public static class Builder {
-        private int orderId;
+        private Long orderId;
         private LocalDateTime orderDate = LocalDateTime.now();
         private double totalAmount;
         private OrderStatus status = OrderStatus.PENDING;
         private Student studentId;
         private List<OrderItem> orderItems = new ArrayList<>();
 
-        public Builder orderId(int orderId) {
+        public Builder orderId(Long orderId) {
             this.orderId = orderId;
             return this;
         }

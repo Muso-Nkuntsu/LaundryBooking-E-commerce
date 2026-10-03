@@ -1,8 +1,10 @@
 package com.cput.laundryecommercebookingsystem.service.impl;
 
+import com.cput.laundryecommercebookingsystem.domain.LaundryService;
 import com.cput.laundryecommercebookingsystem.domain.Payment;
 import com.cput.laundryecommercebookingsystem.factory.PaymentFactory;
 import com.cput.laundryecommercebookingsystem.repository.PaymentRepository;
+import com.cput.laundryecommercebookingsystem.service.ILaundryService;
 import com.cput.laundryecommercebookingsystem.service.PaymentService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,17 +20,42 @@ import java.util.Optional;
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final ILaundryService laundryService;
 
-    public PaymentServiceImpl(PaymentRepository paymentRepository) {
+    public PaymentServiceImpl(PaymentRepository paymentRepository,ILaundryService laundryService) {
         this.paymentRepository = paymentRepository;
+        this.laundryService = laundryService;
     }
     @Override
     @Transactional
-    public Payment processPayment(double amount, LocalDateTime paymentDate, String paymentMethod,
-                                  String status, String transactionRef,
-                                  Long bookingId, Long orderId, Long serviceId) {
-        Payment payment = PaymentFactory.createPayment(amount, paymentDate, paymentMethod,
-                status, transactionRef, bookingId, orderId, serviceId);
+    public Payment processPayment(
+            double amount,
+            LocalDateTime paymentDate,
+            String paymentMethod,
+            String status,
+            String transactionRef,
+            Long bookingId,
+            Long orderId,
+            Long serviceId) {
+
+        LaundryService service = null;
+
+        if(serviceId != null){
+            service = laundryService.read(serviceId);
+
+            if (service == null) {
+                throw new NoSuchElementException("Laundry service not found with id: " + serviceId);
+            }
+        }
+        Payment payment = PaymentFactory.createPayment(
+                amount,
+                paymentDate,
+                paymentMethod,
+                status,
+                transactionRef,
+                bookingId,
+                orderId,
+                service);
         return paymentRepository.save(payment);
     }
 
@@ -82,7 +109,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .setTransactionRef(existing.getTransactionRef())
                 .setBookingId(existing.getBookingId())
                 .setOrderId(existing.getOrderId())
-                .setServiceId(existing.getServiceId())
+                .setService(existing.getService())
                 .build();
     }
 }

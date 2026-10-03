@@ -4,7 +4,7 @@ import com.cput.laundryecommercebookingsystem.domain.LaundryRoom;
 import com.cput.laundryecommercebookingsystem.service.ILaundryRoomService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 25 July 2026
  */
 
-@WebMvcTest(LaundryRoomController.class)
+@WebMvcTest(controllers = {LaundryRoomController.class})
 class LaundryRoomControllerTest {
 
     @Autowired

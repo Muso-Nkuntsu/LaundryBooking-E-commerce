@@ -16,13 +16,13 @@ public class OrderItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_item_id", nullable = false)
-    private int orderItemId;
+    private Long orderItemId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
@@ -55,9 +55,7 @@ public class OrderItem {
     public void calculateSubtotal() {
         this.subtotal = this.quantity * this.unitPrice;
     }
-    public int getOrderItemId() {
-        return orderItemId;
-    }
+    public Long getOrderItemId() {return orderItemId;}
     public Order getOrder() {
         return order;
     }
@@ -114,13 +112,13 @@ public class OrderItem {
      */
     public static class Builder {
 
-        private int orderItemId;
+        private Long orderItemId;
         private Order order;
         private Product product;
         private int quantity;
         private double unitPrice;
 
-        public Builder setOrderItemId(int orderItemId) {
+        public Builder setOrderItemId(Long orderItemId) {
             this.orderItemId = orderItemId;
             return this;
         }

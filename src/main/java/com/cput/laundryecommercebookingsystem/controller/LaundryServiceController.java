@@ -36,7 +36,7 @@ public class LaundryServiceController {
     }
 
     @GetMapping("/read/{id}")
-    public ResponseEntity<LaundryService> read(@PathVariable String id) {
+    public ResponseEntity<LaundryService> read(@PathVariable Long id) {
         LaundryService service = laundryService.read(id);
         if (service == null) {
             return ResponseEntity.notFound().build();
@@ -54,7 +54,7 @@ public class LaundryServiceController {
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Boolean> delete(@PathVariable String id) {
+    public ResponseEntity<Boolean> delete(@PathVariable Long id) {
         boolean deleted = laundryService.delete(id);
         if (!deleted) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(false);

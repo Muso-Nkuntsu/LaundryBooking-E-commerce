@@ -1,5 +1,6 @@
 package com.cput.laundryecommercebookingsystem.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ public class LaundryRoom {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "room_id", nullable = false, updatable = false)
-    private int roomId;
+    private Long roomId;
 
 
     @Column(name = "room_number", nullable = false, length = 50)
@@ -59,7 +60,7 @@ public class LaundryRoom {
 
     }
 
-    public int getRoomId() {
+    public Long getRoomId() {
         return roomId;
     }
 
@@ -83,6 +84,9 @@ public class LaundryRoom {
         return isActive;
     }
 
+    // Left out of JSON: each machine already points back to its room, which would loop forever.
+    // Machines are loaded through /laundrymachine/getall instead.
+    @JsonIgnore
     public List<LaundryMachine> getMachines() {
         return Collections.unmodifiableList(machines);
     }
@@ -135,7 +139,7 @@ public class LaundryRoom {
         if (this == o) return true;
         if (!(o instanceof LaundryRoom)) return false;
         LaundryRoom room = (LaundryRoom) o;
-        return roomId == room.roomId;
+        return Objects.equals(roomId, room.roomId);
     }
 
     @Override
@@ -156,7 +160,7 @@ public class LaundryRoom {
     }
 
     public static class Builder {
-        private int roomId;
+        private Long roomId;
         private String roomNumber;
         private String location;
         private int capacity;
@@ -164,7 +168,7 @@ public class LaundryRoom {
         private boolean isActive = false;
         private List<LaundryMachine> machines = new ArrayList<>();
 
-        public Builder roomId(int roomId) {
+        public Builder roomId(Long roomId) {
             this.roomId = roomId;
             return this;
         }

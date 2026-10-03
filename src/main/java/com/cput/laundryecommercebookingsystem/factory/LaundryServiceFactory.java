@@ -20,13 +20,12 @@ public class LaundryServiceFactory {
             return null;
         }
 
-        String id = UUID.randomUUID().toString();
 
         return new LaundryService.Builder()
-                .setId(id)
                 .setServiceName(serviceName)
                 .setDescription(description)
                 .setPrice(price)
+
                 .build();
     }
 }

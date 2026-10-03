@@ -22,7 +22,7 @@ public class PaymentController {
     @PostMapping("/create")
     public ResponseEntity<Payment> processPayment(@RequestParam double amount,
                                                   @RequestParam String paymentMethod,
-                                                  @RequestParam String status,
+                                                  @RequestParam(defaultValue = "PENDING") String status,
                                                   @RequestParam(required = false) String transactionRef,
                                                   @RequestParam(required = false) Long bookingId,
                                                   @RequestParam(required = false) Long orderId,
