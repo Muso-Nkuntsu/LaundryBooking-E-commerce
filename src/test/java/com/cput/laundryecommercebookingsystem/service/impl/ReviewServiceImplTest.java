@@ -5,7 +5,7 @@ import com.cput.laundryecommercebookingsystem.domain.Review;
 import com.cput.laundryecommercebookingsystem.domain.Student;
 import com.cput.laundryecommercebookingsystem.repository.ILaundryServiceRepository;
 import com.cput.laundryecommercebookingsystem.repository.IReviewRepository;
-import com.cput.laundryecommercebookingsystem.repository.StudentRepository;
+import com.cput.laundryecommercebookingsystem.repository.IStudentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -31,7 +31,7 @@ public class ReviewServiceImplTest {
     private IReviewRepository reviewRepository;
 
     @Mock
-    private StudentRepository studentRepository;
+    private IStudentRepository studentRepository;
 
     @Mock
     private ILaundryServiceRepository laundryServiceRepository;

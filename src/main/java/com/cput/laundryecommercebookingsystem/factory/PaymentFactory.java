@@ -1,6 +1,7 @@
 package com.cput.laundryecommercebookingsystem.factory;
 
 // 222665963 Libolwetu Nokenke
+import com.cput.laundryecommercebookingsystem.domain.LaundryService;
 import com.cput.laundryecommercebookingsystem.domain.Payment;
 
 import java.time.LocalDateTime;
@@ -9,7 +10,7 @@ public class PaymentFactory {
 
     public static Payment createPayment(double amount, LocalDateTime paymentDate, String paymentMethod,
                                         String status, String transactionRef,
-                                        Long bookingId, Long orderId, Long serviceId) {
+                                        Long bookingId, Long orderId, LaundryService service) {
 
         if (amount <= 0) {
             throw new IllegalArgumentException("Amount must be greater than zero");
@@ -23,7 +24,7 @@ public class PaymentFactory {
         if (status == null || status.trim().isEmpty()) {
             throw new IllegalArgumentException("Status cannot be null or empty");
         }
-        if (bookingId == null && orderId == null && serviceId == null) {
+        if (bookingId == null && orderId == null && service == null) {
             throw new IllegalArgumentException("Payment must be linked to a booking, order, or service");
         }
 
@@ -35,7 +36,7 @@ public class PaymentFactory {
                 .setTransactionRef(transactionRef)
                 .setBookingId(bookingId)
                 .setOrderId(orderId)
-                .setServiceId(serviceId)
+                .setService(service)
                 .build();
     }
 }

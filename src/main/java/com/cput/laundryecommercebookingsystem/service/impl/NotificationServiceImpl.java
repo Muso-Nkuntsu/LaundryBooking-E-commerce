@@ -12,10 +12,13 @@ import com.cput.laundryecommercebookingsystem.domain.Student;
 import com.cput.laundryecommercebookingsystem.factory.NotificationFactory;
 import com.cput.laundryecommercebookingsystem.repository.iNotificationRepository;
 import com.cput.laundryecommercebookingsystem.service.INotificationService;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
+// @Service was missing, so Spring never created this class and nothing could use it.
+@Service
 public class NotificationServiceImpl implements INotificationService {
 
     private final iNotificationRepository notificationRepository;
@@ -56,7 +59,7 @@ public class NotificationServiceImpl implements INotificationService {
     @Transactional
     public Notification markAsRead(Long notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new NoSuchElementException(
                         "No notification found with id: " + notificationId));
         notification.markAsRead();
         return notificationRepository.save(notification);
@@ -77,5 +80,11 @@ public class NotificationServiceImpl implements INotificationService {
         return notificationRepository.findByStudentAndIsReadFalse(student);
     }
 
-
+    @Override
+    @Transactional
+    public List<Notification> markAllAsRead(Student student) {
+        List<Notification> unread = notificationRepository.findByStudentAndIsReadFalse(student);
+        unread.forEach(Notification::markAsRead);
+        return notificationRepository.saveAll(unread);
+    }
 }

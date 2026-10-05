@@ -18,7 +18,6 @@ import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/laundry-room")
-@CrossOrigin(origins = "*")
 public class LaundryRoomController {
 
     private final ILaundryRoomService service;
@@ -40,7 +39,7 @@ public class LaundryRoomController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<LaundryRoom> getRoom(@PathVariable int id) {
+    public ResponseEntity<LaundryRoom> getRoom(@PathVariable Long id) {
         return service.getRoomById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -58,7 +57,7 @@ public class LaundryRoomController {
 
     @PutMapping("/{id}/update")
     public ResponseEntity<LaundryRoom> updateRoom(
-            @PathVariable int id,
+            @PathVariable Long id,
             @RequestParam String location,
             @RequestParam int capacity,
             @RequestParam String description) {
@@ -69,18 +68,18 @@ public class LaundryRoomController {
     }
 
     @PutMapping("/{id}/activate")
-    public ResponseEntity<LaundryRoom> activateRoom(@PathVariable int id) {
+    public ResponseEntity<LaundryRoom> activateRoom(@PathVariable Long id) {
         return ResponseEntity.ok(service.activateRoom(id));
     }
 
     @PutMapping("/{id}/deactivate")
-    public ResponseEntity<LaundryRoom> deactivateRoom(@PathVariable int id) {
+    public ResponseEntity<LaundryRoom> deactivateRoom(@PathVariable Long id) {
         return ResponseEntity.ok(service.deactivateRoom(id));
     }
 
     @PostMapping("/{id}/machines")
     public ResponseEntity<LaundryRoom> addMachine(
-            @PathVariable int id,
+            @PathVariable Long id,
             @RequestBody LaundryMachine machine) {
 
         return ResponseEntity.ok(
@@ -89,7 +88,7 @@ public class LaundryRoomController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRoom(@PathVariable int id) {
+    public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {
         boolean deleted = service.deleteRoom(id);
         if (deleted) {
             return ResponseEntity.noContent().build();

@@ -39,6 +39,9 @@ public interface ILaundryMachineService {
 
     List<LaundryMachine> getAllMachines();
 
+    /** Machines that can still be booked for the given time slot. */
+    List<LaundryMachine> getAvailableMachines(Long timeSlotId);
+
     void deleteMachine(
             Long machineId
     );

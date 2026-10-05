@@ -1,5 +1,9 @@
 package com.cput.laundryecommercebookingsystem.domain;
+
+
 // 222665963 Libolwetu Nokenke
+
+
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -10,7 +14,7 @@ import java.util.Objects;
 public class TimeSlot {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
+    @Column(name = "time_slot_id")
     private Long id;
 
     @Column(name = "start_time")
@@ -19,11 +23,11 @@ public class TimeSlot {
     @Column(name = "end_time")
     private LocalTime endTime;
 
-    @Column(name = "date")
-    private LocalDate date;
-
     @Column(name = "is_available")
     private boolean isAvailable;
+
+    @Column(name = "date")
+    private LocalDate date;
 
     protected TimeSlot() {
     }

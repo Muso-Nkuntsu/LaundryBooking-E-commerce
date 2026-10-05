@@ -1,6 +1,7 @@
 package com.cput.laundryecommercebookingsystem.controller;
 
 import com.cput.laundryecommercebookingsystem.domain.Student;
+import com.cput.laundryecommercebookingsystem.dto.LoginRequest;
 import com.cput.laundryecommercebookingsystem.service.IStudentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -28,14 +29,20 @@ public class StudentController {
 
     @PostMapping("/create")
     public ResponseEntity<Student> create(@RequestBody Student student) {
+        // Invalid details give 400 and a duplicate email gives 409 (see GlobalExceptionHandler).
+        return ResponseEntity.ok(studentService.createStudent(student));
+    }
 
-        Student created = studentService.createStudent(student);
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        Optional<Student> student = studentService.login(request.email(), request.password());
 
-        if (created == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        if (student.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("The email or password is incorrect.");
         }
 
-        return ResponseEntity.ok(created);
+        return ResponseEntity.ok(student.get());
     }
 
     @GetMapping("/read/{id}")
@@ -49,14 +56,7 @@ public class StudentController {
 
     @PostMapping("/update")
     public ResponseEntity<Student> update(@RequestBody Student student) {
-
-        try {
-            Student updated = studentService.updateStudent(student);
-            return ResponseEntity.ok(updated);
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
+        return ResponseEntity.ok(studentService.updateStudent(student));
     }
 
     @DeleteMapping("/delete/{id}")

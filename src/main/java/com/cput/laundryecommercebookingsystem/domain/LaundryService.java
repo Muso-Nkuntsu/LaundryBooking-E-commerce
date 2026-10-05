@@ -6,9 +6,8 @@ package com.cput.laundryecommercebookingsystem.domain;
  * Date: 25 July 2026
  */
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.util.Objects;
 
 @Entity
@@ -16,9 +15,17 @@ import java.util.Objects;
 public class LaundryService {
 
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "service_id", nullable = false)
+    private Long id;
+
+    @Column(name = "service_name")
     private String serviceName;
+
+    @Column(name = "description")
     private String description;
+
+    @Column(name = "price")
     private double price;
 
     /**
@@ -37,7 +44,7 @@ public class LaundryService {
         this.price = builder.price;
     }
 
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
@@ -81,12 +88,12 @@ public class LaundryService {
 
     public static class Builder {
 
-        private String id;
+        private Long id;
         private String serviceName;
         private String description;
         private double price;
 
-        public Builder setId(String id) {
+        public Builder setId(Long id) {
             this.id = id;
             return this;
         }

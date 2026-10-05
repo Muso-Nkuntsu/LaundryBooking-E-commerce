@@ -6,6 +6,8 @@
 package com.cput.laundryecommercebookingsystem.domain;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.Objects;
@@ -19,7 +21,8 @@ import java.util.Objects;
 public class Product {
 
     @Id
-    private String productId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long productId;
     private String name;
     private String description;
     private double price;
@@ -44,7 +47,7 @@ public class Product {
         this.inventoryQuantity = builder.inventoryQuantity;
     }
 
-    public String getProductId() {
+    public Long getProductId() {
         return productId;
     }
 
@@ -100,14 +103,14 @@ public class Product {
 
     public static class Builder {
 
-        private String productId;
+        private Long productId;
         private String name;
         private String description;
         private double price;
         private String category;
         private int inventoryQuantity;
 
-        public Builder setProductId(String productId) {
+        public Builder setProductId(Long productId) {
             this.productId = productId;
             return this;
         }

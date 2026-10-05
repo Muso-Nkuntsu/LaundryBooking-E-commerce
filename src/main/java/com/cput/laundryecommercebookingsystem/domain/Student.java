@@ -6,6 +6,7 @@ Author: Sabotseng Ndaba(230235875)
 Date: 25 July 2026
  */
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -29,6 +30,8 @@ public class Student {
     @Column(nullable = false)
     private String phoneNumber;
 
+    // Accepted when registering or logging in, never sent back in a response.
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(nullable = false)
     private String password;
 

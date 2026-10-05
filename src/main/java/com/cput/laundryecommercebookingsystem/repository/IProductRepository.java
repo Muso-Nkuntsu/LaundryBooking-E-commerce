@@ -10,5 +10,5 @@ import org.springframework.stereotype.Repository;
 import com.cput.laundryecommercebookingsystem.domain.Product;
 
 @Repository
-public interface IProductRepository extends JpaRepository<Product, String> {
+public interface IProductRepository extends JpaRepository<Product, Long> {
 }

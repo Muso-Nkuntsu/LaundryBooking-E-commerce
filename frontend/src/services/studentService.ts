@@ -1,67 +1,28 @@
+import { apiPost } from "./Api";
 import type { Student } from "../types/Student";
 
-const API_URL = "http://localhost:8080/student";
+export interface NewStudent {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+}
 
-export const createStudent = async (student: Student): Promise<Student> => {
-  const response = await fetch(`${API_URL}/create`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(student),
-  });
+// The backend never sends the password back.
+export type StudentAccount = Omit<Student, "password">;
 
-  if (!response.ok) {
-    throw new Error("Failed to register student.");
-  }
+export const createStudent = (student: NewStudent): Promise<StudentAccount> =>
+  apiPost<StudentAccount>("/student/create", student);
 
-  return response.json();
-};
+/** Fails with status 401 when the email or password is wrong. */
+export const loginStudent = (email: string, password: string): Promise<StudentAccount> =>
+  apiPost<StudentAccount>("/student/login", { email, password });
 
-export const getStudentById = async (studentId: number): Promise<Student> => {
-  const response = await fetch(`${API_URL}/read/${studentId}`);
-
-  if (!response.ok) {
-    throw new Error("Student not found.");
-  }
-
-  return response.json();
-};
-
-export const updateStudent = async (student: Student): Promise<Student> => {
-  const response = await fetch(`${API_URL}/update`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(student),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to update student.");
-  }
-
-  return response.json();
-};
-
-export const deleteStudent = async (studentId: number): Promise<boolean> => {
-  const response = await fetch(`${API_URL}/delete/${studentId}`, {
-    method: "DELETE",
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to delete student.");
-  }
-
-  return true;
-};
-
-export const getAllStudents = async (): Promise<Student[]> => {
-  const response = await fetch(`${API_URL}/getall`);
-
-  if (!response.ok) {
-    throw new Error("Failed to retrieve students.");
-  }
-
-  return response.json();
-};
+export const updateStudent = (student: {
+  studentId: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+}): Promise<StudentAccount> => apiPost<StudentAccount>("/student/update", student);
