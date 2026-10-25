@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import RequireLogin from "../components/layout/RequireLogin";
 import { ToastProvider } from "../context/ToastProvider";
+import { CartProvider } from "../context/CartProvider";
 
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
@@ -24,6 +25,7 @@ import BookingConfirmation from "../pages/booking/BookingConfirmation";
 import MyBookings from "../pages/booking/MyBookings";
 
 import OrderItems from "../pages/orders/OrderItems";
+import Cart from "../pages/cart/Cart";
 import NotificationsPage from "../pages/notifications/NotificationPage";
 import ReviewsPage from "../pages/reviews/ReviewPage";
 
@@ -33,6 +35,7 @@ const withNav = (page: ReactNode) => <RequireLogin>{page}</RequireLogin>;
 const AppRoutes: React.FC = () => {
   return (
     <ToastProvider>
+      <CartProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -56,6 +59,7 @@ const AppRoutes: React.FC = () => {
           {/* Products */}
           <Route path="/products" element={withNav(<Products />)} />
           <Route path="/products/:productId" element={withNav(<ProductDetails />)} />
+          <Route path="/cart" element={withNav(<Cart />)} />
 
           {/* Booking */}
           <Route path="/make-booking" element={withNav(<MakeBooking />)} />
@@ -70,6 +74,7 @@ const AppRoutes: React.FC = () => {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
+      </CartProvider>
     </ToastProvider>
   );
 };

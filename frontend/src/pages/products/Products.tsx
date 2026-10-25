@@ -5,12 +5,14 @@ import { EmptyState, ErrorState, SkeletonGrid } from "../../components/common/St
 import Icon from "../../components/common/Icon";
 import { useFetch } from "../../hooks/useFetch";
 import { useToast } from "../../context/useToast";
+import { useCart } from "../../context/useCart";
 import { getAllProducts } from "../../services/productService";
 import { friendlyError } from "../../utilis/errorMessage";
 import { formatCurrency } from "../../utilis/FormatCurrency";
 
 function Products() {
   const toast = useToast();
+  const cart = useCart();
   const { data, loading, error, reload } = useFetch(() =>
     getAllProducts().catch((err: unknown) => {
       throw new Error(friendlyError(err, "We couldn't load the products."));
@@ -24,8 +26,12 @@ function Products() {
 
   const handleAdd = (product: Product) => {
     if (product.inventoryQuantity <= 0) return;
-    // The cart isn't connected to the backend yet; this only confirms the click.
-    toast.success(`${product.name} added to your cart.`);
+    const added = cart.add(product, 1);
+    if (added === 0) {
+      toast.error(`All ${product.inventoryQuantity} in stock are already in your cart.`);
+    } else {
+      toast.success(`${product.name} added to your cart.`);
+    }
   };
 
   return (
@@ -35,7 +41,12 @@ function Products() {
           <h1>Shop</h1>
           <p>Detergent, softener and other laundry supplies to collect with your wash.</p>
         </div>
-        <Link to="/order-items" className="btn btn-ghost">My orders</Link>
+        <div className="btn-row">
+          <Link to="/order-items" className="btn btn-ghost">My orders</Link>
+          <Link to="/cart" className="btn btn-primary">
+            View cart{cart.count > 0 ? ` (${cart.count})` : ""}
+          </Link>
+        </div>
       </header>
 
       {loading && <SkeletonGrid count={6} height={300} />}
@@ -57,6 +68,7 @@ function Products() {
       <section className="grid grid-3">
         {visible.map((product) => {
           const inStock = product.inventoryQuantity > 0;
+          const inCart = cart.quantityOf(product.productId);
           return (
             <article className="card tile hoverable" key={product.productId}>
               <div className="product-art" aria-hidden="true"><Icon name="bag" size={44} /></div>
@@ -72,7 +84,7 @@ function Products() {
                   Details
                 </Link>
                 <button type="button" className="btn btn-primary btn-sm" style={{ flex: 1 }} disabled={!inStock} onClick={() => handleAdd(product)}>
-                  Add to cart
+                  {inCart > 0 ? `Add another (${inCart} in cart)` : "Add to cart"}
                 </button>
               </div>
             </article>

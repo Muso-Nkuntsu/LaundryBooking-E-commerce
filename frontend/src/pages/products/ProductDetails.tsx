@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ErrorState, Loading } from "../../components/common/States";
 import Icon from "../../components/common/Icon";
 import { useFetch } from "../../hooks/useFetch";
 import { useToast } from "../../context/useToast";
+import { useCart } from "../../context/useCart";
 import { getProductById } from "../../services/productService";
 import { friendlyError } from "../../utilis/errorMessage";
 import { formatCurrency } from "../../utilis/FormatCurrency";
@@ -11,6 +12,8 @@ import { formatCurrency } from "../../utilis/FormatCurrency";
 function ProductDetails() {
   const { productId } = useParams();
   const toast = useToast();
+  const cart = useCart();
+  const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
 
   const { data: product, loading, error, reload } = useFetch(async () => {
@@ -37,12 +40,15 @@ function ProductDetails() {
   }
 
   const stock = product.inventoryQuantity;
-  const inStock = stock > 0;
+  const inCart = cart.quantityOf(product.productId);
+  const canAdd = Math.max(stock - inCart, 0);
+  const inStock = canAdd > 0;
 
   const handleAdd = () => {
     if (!inStock) return;
-    // The cart isn't connected to the backend yet; this only confirms the click.
-    toast.success(`${quantity} × ${product.name} added to your cart.`);
+    const added = cart.add(product, quantity);
+    setQuantity(1);
+    toast.success(`${added} × ${product.name} added to your cart.`);
   };
 
   return (
@@ -56,7 +62,7 @@ function ProductDetails() {
           <p className="muted">{product.description || "Laundry product for student use."}</p>
           <div className="row" style={{ justifyContent: "flex-start", gap: 16 }}>
             <span className="price" style={{ fontSize: "2rem" }}>{formatCurrency(product.price)}</span>
-            <span className={`pill ${inStock ? "pill-ok" : "pill-bad"}`}>{inStock ? `${stock} available` : "Out of stock"}</span>
+            <span className={`pill ${stock > 0 ? "pill-ok" : "pill-bad"}`}>{stock <= 0 ? "Out of stock" : `${stock} available`}</span>
           </div>
 
           <div>
@@ -64,13 +70,20 @@ function ProductDetails() {
             <div className="stepper" role="group" aria-labelledby="quantity-label">
               <button type="button" aria-label="One fewer" disabled={!inStock || quantity <= 1} onClick={() => setQuantity((q) => Math.max(q - 1, 1))}>−</button>
               <output aria-live="polite">{quantity}</output>
-              <button type="button" aria-label="One more" disabled={!inStock || quantity >= stock} onClick={() => setQuantity((q) => Math.min(q + 1, stock))}>+</button>
+              <button type="button" aria-label="One more" disabled={!inStock || quantity >= canAdd} onClick={() => setQuantity((q) => Math.min(q + 1, canAdd))}>+</button>
             </div>
           </div>
 
-          <button type="button" className="btn btn-primary" disabled={!inStock} onClick={handleAdd}>
-            Add to cart, {formatCurrency(product.price * quantity)}
-          </button>
+          <div className="btn-row">
+            <button type="button" className="btn btn-primary" disabled={!inStock} onClick={handleAdd}>
+              {stock > 0 && !inStock ? "All stock is in your cart" : `Add to cart, ${formatCurrency(product.price * quantity)}`}
+            </button>
+            {inCart > 0 && (
+              <button type="button" className="btn btn-ghost" onClick={() => navigate("/cart")}>
+                View cart ({inCart} of this)
+              </button>
+            )}
+          </div>
         </div>
       </section>
     </div>
