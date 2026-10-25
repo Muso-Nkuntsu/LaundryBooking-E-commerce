@@ -122,7 +122,45 @@ Errors now come back as a status code with a plain-text message: 400 invalid req
 ## Not done
 
 - No tokens or sessions: endpoints still trust the student ID the caller sends. Fine for a demo; say so in the report.
-- No cart or checkout: there is no endpoint to create an order from the shop.
-- Payments are only recorded as PENDING; nothing is charged.
+- No real payment gateway: card payments are simulated (approved straight away, nothing charged, card details never sent).
 - A time slot's `available` flag is not changed by bookings. Availability is worked out per machine instead.
 - The database password is still in `application.properties`.
+
+## Update: payment, cart and booking flow fixes
+
+### What changed in behaviour
+
+| Before | Now |
+|---|---|
+| Every booking was CONFIRMED straight away, even before paying | A booking that costs money starts as **PENDING** (machine held). It becomes CONFIRMED once paid. A free booking (no service) is still confirmed straight away. |
+| "Add to cart" did nothing | Real cart in the frontend, and a new checkout endpoint that turns the cart into an order (PENDING until paid) |
+| EFT was treated as paid at once, with no bank details | EFT shows the account details and a reference, asks who paid and from which bank, and is saved as a PENDING payment. The booking or order stays PENDING until the money is confirmed. |
+
+### Payment rules (`PaymentServiceImpl`)
+- The amount is always the booking's or order's own total, worked out on the server. An amount sent by the browser is ignored.
+- **CARD** is simulated: saved as `COMPLETED`, which confirms the booking or marks the order `PAID`, and sends a notification.
+- **EFT** is saved as `PENDING` with `transactionRef`, `payerName` and `payerBank`. To confirm it once the money is in the bank: `PUT /payment/{id}/complete`. This confirms the booking, or marks the order PAID, and notifies the student. `PUT /payment/{id}/fail` marks it failed, and the student can pay again or cancel.
+- Paying for something that is cancelled, already paid, or already has an EFT waiting to be verified is refused with 409.
+
+### Endpoints
+| Method and path | Purpose |
+|---|---|
+| POST `/api/orders/checkout` | Body `{ "studentId": 1, "items": [ { "productId": 3, "quantity": 2 } ] }`. Prices come from the database, stock is checked and held, and the order starts PENDING. |
+| PATCH `/api/orders/{id}/cancel` | Now also puts the held stock back. |
+| POST `/payment/create` | Params: `paymentMethod` (CARD or EFT), `bookingId` or `orderId`; for EFT also `transactionRef`, `payerName`, `payerBank`. `amount` and `status` are no longer needed. |
+| GET `/payment/order/{orderId}` | New: payments for an order. |
+
+### Files changed
+- `service/impl/BookingServiceImpl.java`, `service/IBookingService.java`: paid bookings start PENDING; new `confirmBooking`.
+- `service/impl/PaymentServiceImpl.java`, `service/PaymentService.java`, `controller/PaymentController.java`: rules above.
+- `domain/Payment.java`, `factory/PaymentFactory.java`: `payerName` and `payerBank` added.
+- `service/impl/OrderServiceImpl.java`, `service/IOrderService.java`, `controller/OrderController.java`: checkout, and stock put back on cancel.
+- New: `dto/CheckoutRequest.java`.
+
+### Database
+Nothing to run by hand: Hibernate adds the two new `payments` columns (`payer_name`, `payer_bank`) on the next start. Existing bookings keep their current status.
+
+### Tests
+`PaymentServiceImpl` and `OrderServiceImpl` have new constructor arguments:
+- `PaymentServiceImpl(paymentRepository, laundryService, bookingService, orderService, notificationService)`
+- `OrderServiceImpl(orderRepository, studentRepository, productRepository)`

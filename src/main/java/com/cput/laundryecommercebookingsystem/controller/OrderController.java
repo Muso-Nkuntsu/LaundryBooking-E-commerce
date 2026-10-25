@@ -2,6 +2,7 @@ package com.cput.laundryecommercebookingsystem.controller;
 
 import com.cput.laundryecommercebookingsystem.domain.Order;
 import com.cput.laundryecommercebookingsystem.domain.enums.OrderStatus;
+import com.cput.laundryecommercebookingsystem.dto.CheckoutRequest;
 import com.cput.laundryecommercebookingsystem.service.IOrderService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,16 @@ public class OrderController {
     }
 
     
+    /** Turns the student's cart into a PENDING order. Body: see CheckoutRequest. */
+    @PostMapping("/checkout")
+    public ResponseEntity<Order> checkout(@RequestBody CheckoutRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Send the cart as the request body");
+        }
+        Order order = orderService.checkout(request.studentId(), request.items());
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
+    }
+
     @GetMapping
     public ResponseEntity<List<Order>> getAllOrders() {
         return ResponseEntity.ok(orderService.getAllOrders());

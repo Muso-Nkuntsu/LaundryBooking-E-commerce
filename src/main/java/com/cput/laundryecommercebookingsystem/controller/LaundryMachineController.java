@@ -44,7 +44,8 @@ public class LaundryMachineController {
 
     /** Machines that can still be booked for a time slot: GET /laundrymachine/available?timeSlotId=3 */
     @GetMapping("/available")
-    public ResponseEntity<List<LaundryMachine>> getAvailableMachines(@RequestParam Long timeSlotId) {
+    public ResponseEntity<List<LaundryMachine>> getAvailableMachines(
+            @RequestParam Long timeSlotId) {
         return ResponseEntity.ok(laundryMachineService.getAvailableMachines(timeSlotId));
     }
 
