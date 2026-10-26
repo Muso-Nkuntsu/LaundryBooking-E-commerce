@@ -56,7 +56,7 @@ public class BookingController {
         public ResponseEntity<Booking> createBooking(@RequestParam Long studentId,
                                                      @RequestParam Long machineId,
                                                      @RequestParam Long timeSlotId,
-                                                     @RequestParam(required = false) Long serviceId) {
+                                                     @RequestParam (required = false) Long serviceId) {
             Student student = studentRepository.findById(studentId)
                     .orElseThrow(() -> notFound("Student", studentId));
 

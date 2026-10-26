@@ -58,9 +58,9 @@ public class LaundryRoomController {
     @PutMapping("/{id}/update")
     public ResponseEntity<LaundryRoom> updateRoom(
             @PathVariable Long id,
-            @RequestParam String location,
-            @RequestParam int capacity,
-            @RequestParam String description) {
+            @RequestBody String location,
+            @RequestBody int capacity,
+            @RequestBody String description) {
 
         return ResponseEntity.ok(
                 service.updateRoom(id, location, capacity, description)

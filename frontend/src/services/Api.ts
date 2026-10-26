@@ -71,6 +71,9 @@ export const apiPost = <T>(path: string, body?: unknown, params?: QueryParams): 
 export const apiPut = <T>(path: string, body?: unknown, params?: QueryParams): Promise<T> =>
   request<T>("PUT", path, { body, params });
 
+export const apiPatch = <T>(path: string, body?: unknown, params?: QueryParams): Promise<T> =>
+  request<T>("PATCH", path, { body, params });
+
 export const apiDelete = <T = void>(path: string): Promise<T> => request<T>("DELETE", path);
 
 export const getApiErrorMessage = (error: unknown): string => {

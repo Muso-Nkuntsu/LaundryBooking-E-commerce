@@ -5,7 +5,6 @@ import com.cput.laundryecommercebookingsystem.service.PaymentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -19,25 +18,24 @@ public class PaymentController {
     public PaymentController(PaymentService paymentService) {
         this.paymentService = paymentService;
     }
+    /**
+     * Example (card): POST /payment/create?paymentMethod=CARD&bookingId=12
+     * Example (EFT):  POST /payment/create?paymentMethod=EFT&bookingId=12&transactionRef=SPIN-B12
+     *                      &payerName=N%20Tukwayo&payerBank=FNB
+     * The amount charged is the booking's or order's own total; the status is decided by the server.
+     */
     @PostMapping("/create")
-    public ResponseEntity<Payment> processPayment(@RequestParam double amount,
+    public ResponseEntity<Payment> processPayment(@RequestParam(required = false) Double amount,
                                                   @RequestParam String paymentMethod,
-                                                  @RequestParam(defaultValue = "PENDING") String status,
                                                   @RequestParam(required = false) String transactionRef,
                                                   @RequestParam(required = false) Long bookingId,
                                                   @RequestParam(required = false) Long orderId,
-                                                  @RequestParam(required = false) Long serviceId) {
+                                                  @RequestParam(required = false) Long serviceId,
+                                                  @RequestParam(required = false) String payerName,
+                                                  @RequestParam(required = false) String payerBank) {
 
-        Payment payment = paymentService.processPayment(
-                amount,
-                LocalDateTime.now(),
-                paymentMethod,
-                status,
-                transactionRef,
-                bookingId,
-                orderId,
-                serviceId
-        );
+        Payment payment = paymentService.recordPayment(
+                amount, paymentMethod, transactionRef, bookingId, orderId, serviceId, payerName, payerBank);
 
         return ResponseEntity.ok(payment);
     }
@@ -64,6 +62,11 @@ public class PaymentController {
     public ResponseEntity<List<Payment>> getPaymentsByBookingId(@PathVariable Long bookingId) {
         return ResponseEntity.ok(paymentService.getPaymentsByBookingId(bookingId));
     }
+    @GetMapping("/order/{orderId}")
+    public ResponseEntity<List<Payment>> getPaymentsByOrderId(@PathVariable Long orderId) {
+        return ResponseEntity.ok(paymentService.getPaymentsByOrderId(orderId));
+    }
+
     @PutMapping("/{id}/complete")
     public ResponseEntity<Payment> markAsCompleted(@PathVariable Long id) {
         try {

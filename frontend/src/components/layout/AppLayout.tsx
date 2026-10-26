@@ -5,6 +5,7 @@ import { APP_NAME } from "../../config";
 import Icon from "../common/Icon";
 import type { IconName } from "../common/Icon";
 import { useFetch } from "../../hooks/useFetch";
+import { useCart } from "../../context/useCart";
 import { notificationService } from "../../services/notificationService";
 import { clearSession, getInitials, getStudentId } from "../../services/session";
 
@@ -29,6 +30,7 @@ const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? "active" :
 
 function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+  const cart = useCart();
 
   // The bell is a nice-to-have: if notifications can't load, it just shows no count.
   const { data: notifications } = useFetch(() => notificationService.fetchNotifications(getStudentId()));
@@ -36,6 +38,7 @@ function AppLayout({ children }: { children: ReactNode }) {
 
   const handleLogout = () => {
     clearSession();
+    cart.clear(); // the next student on this browser starts with an empty cart
     navigate("/login");
   };
 
@@ -56,6 +59,10 @@ function AppLayout({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="topbar-actions">
+          <Link to="/cart" className="icon-btn" aria-label={cart.count > 0 ? `Cart, ${cart.count} items` : "Cart"}>
+            <Icon name="cart" />
+            {cart.count > 0 && <span className="count">{cart.count > 99 ? "99+" : cart.count}</span>}
+          </Link>
           <Link to="/notifications" className="icon-btn" aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}>
             <Icon name="bell" />
             {unread > 0 && <span className="count">{unread > 99 ? "99+" : unread}</span>}
