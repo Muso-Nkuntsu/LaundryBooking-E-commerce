@@ -26,3 +26,15 @@ export const updateStudent = (student: {
   email: string;
   phoneNumber: string;
 }): Promise<StudentAccount> => apiPost<StudentAccount>("/student/update", student);
+
+export interface MessageResponse {
+  message: string;
+}
+
+/** Confirms the email address using the token from the emailed link. Fails with status 400 when it is invalid or expired. */
+export const verifyEmail = (token: string): Promise<MessageResponse> =>
+  apiPost<MessageResponse>("/student/verify-email", { token });
+
+/** Asks for a new verification email. Fails with status 429 when asked again too soon. */
+export const resendVerificationEmail = (email: string): Promise<MessageResponse> =>
+  apiPost<MessageResponse>("/student/resend-verification", { email });

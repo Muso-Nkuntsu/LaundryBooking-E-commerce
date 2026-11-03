@@ -38,6 +38,14 @@ public class Student {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    // Set by the verification flow only; a client cannot send these in a request body.
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Column(nullable = false)
+    private boolean emailVerified;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private LocalDateTime emailVerifiedAt;
+
     protected Student(){
     }
 
@@ -49,6 +57,8 @@ public class Student {
         this.phoneNumber = builder.phoneNumber;
         this.password = builder.password;
         this.createdAt = builder.createdAt;
+        this.emailVerified = builder.emailVerified;
+        this.emailVerifiedAt = builder.emailVerifiedAt;
     }
 
     //Getters
@@ -75,6 +85,20 @@ public class Student {
         return createdAt;
     }
 
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public LocalDateTime getEmailVerifiedAt() {
+        return emailVerifiedAt;
+    }
+
+    /** Marks the email address as confirmed. Called once a valid verification link is used. */
+    public void markEmailVerified(LocalDateTime verifiedAt) {
+        this.emailVerified = true;
+        this.emailVerifiedAt = verifiedAt;
+    }
+
     //Builder Pattern
     public static class Builder{
         private Long studentId;
@@ -84,6 +108,8 @@ public class Student {
         private String phoneNumber;
         private String password;
         private LocalDateTime createdAt;
+        private boolean emailVerified;
+        private LocalDateTime emailVerifiedAt;
 
         public Builder setStudentId(Long studentId){
         this.studentId = studentId;
@@ -114,6 +140,14 @@ public class Student {
             this.createdAt = createdAt;
             return this;
         }
+        public Builder setEmailVerified(boolean emailVerified){
+            this.emailVerified = emailVerified;
+            return this;
+        }
+        public Builder setEmailVerifiedAt(LocalDateTime emailVerifiedAt){
+            this.emailVerifiedAt = emailVerifiedAt;
+            return this;
+        }
 
 public Student build(){
 return new Student(this);
@@ -142,6 +176,7 @@ return new Student(this);
                 ", phoneNumber='" + phoneNumber + '\'' +
                 ", password='" + password + '\'' +
                 ", createdAt=" + createdAt +
+                ", emailVerified=" + emailVerified +
                 '}';
     }
 }

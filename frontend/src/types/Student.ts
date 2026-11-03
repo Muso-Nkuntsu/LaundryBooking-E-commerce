@@ -6,4 +6,6 @@ export interface Student{
     phoneNumber: string;
     password: string;
     createdAt?: string;
+    emailVerified?: boolean;
+    emailVerifiedAt?: string;
 }

@@ -2,6 +2,10 @@ package com.cput.laundryecommercebookingsystem.controller;
 
 import com.cput.laundryecommercebookingsystem.domain.Student;
 import com.cput.laundryecommercebookingsystem.dto.LoginRequest;
+import com.cput.laundryecommercebookingsystem.dto.MessageResponse;
+import com.cput.laundryecommercebookingsystem.dto.ResendVerificationRequest;
+import com.cput.laundryecommercebookingsystem.dto.VerifyEmailRequest;
+import com.cput.laundryecommercebookingsystem.service.IEmailVerificationService;
 import com.cput.laundryecommercebookingsystem.service.IStudentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,10 +25,13 @@ import java.util.Optional;
 public class StudentController {
 
     private final IStudentService studentService;
+    private final IEmailVerificationService emailVerificationService;
 
     @Autowired
-    public StudentController(IStudentService studentService) {
+    public StudentController(IStudentService studentService,
+                             IEmailVerificationService emailVerificationService) {
         this.studentService = studentService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @PostMapping("/create")
@@ -43,6 +50,21 @@ public class StudentController {
         }
 
         return ResponseEntity.ok(student.get());
+    }
+
+    /** Confirms the email address using the token from the emailed link. 400 when it is invalid or expired. */
+    @PostMapping("/verify-email")
+    public ResponseEntity<MessageResponse> verifyEmail(@RequestBody VerifyEmailRequest request) {
+        emailVerificationService.verifyEmail(request.token());
+        return ResponseEntity.ok(new MessageResponse("Your email address has been verified. You can now log in."));
+    }
+
+    /** Sends a new verification email. The reply is the same whether or not the address has an account. */
+    @PostMapping("/resend-verification")
+    public ResponseEntity<MessageResponse> resendVerification(@RequestBody ResendVerificationRequest request) {
+        emailVerificationService.resendVerificationEmail(request.email());
+        return ResponseEntity.ok(new MessageResponse(
+                "If that email belongs to an account that still needs verifying, we've sent a new verification link."));
     }
 
     @GetMapping("/read/{id}")

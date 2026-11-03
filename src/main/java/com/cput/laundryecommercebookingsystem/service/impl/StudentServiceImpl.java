@@ -1,7 +1,9 @@
 package com.cput.laundryecommercebookingsystem.service.impl;
 
 import com.cput.laundryecommercebookingsystem.domain.Student;
+import com.cput.laundryecommercebookingsystem.exception.EmailNotVerifiedException;
 import com.cput.laundryecommercebookingsystem.repository.IStudentRepository;
+import com.cput.laundryecommercebookingsystem.service.IEmailVerificationService;
 import com.cput.laundryecommercebookingsystem.service.IStudentService;
 import com.cput.laundryecommercebookingsystem.factory.StudentFactory;
 import com.cput.laundryecommercebookingsystem.util.PasswordHasher;
@@ -21,9 +23,12 @@ import java.util.Optional;
 public class StudentServiceImpl implements IStudentService {
 
     private final IStudentRepository IStudentRepository;
+    private final IEmailVerificationService emailVerificationService;
 
-    public StudentServiceImpl(IStudentRepository IStudentRepository) {
+    public StudentServiceImpl(IStudentRepository IStudentRepository,
+                              IEmailVerificationService emailVerificationService) {
         this.IStudentRepository = IStudentRepository;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Override
@@ -61,7 +66,10 @@ public class StudentServiceImpl implements IStudentService {
                 .setCreatedAt(validated.getCreatedAt())
                 .build();
 
-        return IStudentRepository.save(studentToSave);
+        // A new account starts unverified; the student confirms it with the emailed link.
+        Student saved = IStudentRepository.save(studentToSave);
+        emailVerificationService.sendVerificationEmail(saved);
+        return saved;
     }
 
     @Override
@@ -90,6 +98,9 @@ public class StudentServiceImpl implements IStudentService {
                 ? existing.getPassword()
                 : PasswordHasher.hash(student.getPassword());
 
+        // A new email address has not been confirmed yet, so the student must verify it again.
+        boolean emailChanged = !email.equals(existing.getEmail());
+
         Student updated = new Student.Builder()
                 .setStudentId(existing.getStudentId())
                 .setFirstName(firstName)
@@ -98,9 +109,15 @@ public class StudentServiceImpl implements IStudentService {
                 .setPhoneNumber(phoneNumber)
                 .setPassword(password)
                 .setCreatedAt(existing.getCreatedAt())
+                .setEmailVerified(!emailChanged && existing.isEmailVerified())
+                .setEmailVerifiedAt(emailChanged ? null : existing.getEmailVerifiedAt())
                 .build();
 
-        return IStudentRepository.save(updated);
+        Student saved = IStudentRepository.save(updated);
+        if (emailChanged) {
+            emailVerificationService.sendVerificationEmail(saved);
+        }
+        return saved;
     }
 
     @Override
@@ -116,6 +133,13 @@ public class StudentServiceImpl implements IStudentService {
         }
 
         Student student = found.get();
+
+        // Checked after the password, so only the account owner is told the email is unverified.
+        if (!student.isEmailVerified()) {
+            throw new EmailNotVerifiedException(
+                    "Please verify your email address before logging in. Check your inbox for the verification link.");
+        }
+
         if (!PasswordHasher.isHashed(student.getPassword())) {
             // Upgrade an account that still stores the plain password.
             student = IStudentRepository.save(new Student.Builder()
@@ -126,6 +150,8 @@ public class StudentServiceImpl implements IStudentService {
                     .setPhoneNumber(student.getPhoneNumber())
                     .setPassword(PasswordHasher.hash(password))
                     .setCreatedAt(student.getCreatedAt())
+                    .setEmailVerified(student.isEmailVerified())
+                    .setEmailVerifiedAt(student.getEmailVerifiedAt())
                     .build());
         }
         return Optional.of(student);
