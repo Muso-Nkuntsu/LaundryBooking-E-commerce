@@ -9,8 +9,13 @@ import { orderItemService } from "../../services/orderItemService";
 import { orderService } from "../../services/orderService";
 import { getStudentId } from "../../services/session";
 import type { OrderItem } from "../../types/orderItem";
-import { ORDER_STATUS_LABEL, ORDER_STATUS_PILL } from "../../types/order";
-import type { OrderStatus } from "../../types/order";
+
+import {
+  ORDER_STATUS_LABEL,
+  ORDER_STATUS_PILL,
+  type OrderStatus,
+} from "../../types/Order";
+
 import { friendlyError } from "../../utilis/errorMessage";
 import { formatCurrency } from "../../utilis/FormatCurrency";
 import { formatFullDate } from "../../utilis/FormatDate";
