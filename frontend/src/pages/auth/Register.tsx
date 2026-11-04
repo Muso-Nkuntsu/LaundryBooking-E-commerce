@@ -80,8 +80,8 @@ function Register() {
     try {
       setSubmitting(true);
       await createStudent({ ...student, password: values.password });
-      toast.success("Account created. Log in to continue.");
-      navigate("/login", { state: { email: student.email } });
+      toast.success("Account created. Check your email for a verification link.");
+      navigate("/login", { state: { email: student.email, justRegistered: true } });
     } catch (error) {
       setServerError(friendlyError(error, "We couldn't create your account. Try again."));
     } finally {

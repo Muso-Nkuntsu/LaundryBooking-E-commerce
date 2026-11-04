@@ -164,3 +164,33 @@ Nothing to run by hand: Hibernate adds the two new `payments` columns (`payer_na
 `PaymentServiceImpl` and `OrderServiceImpl` have new constructor arguments:
 - `PaymentServiceImpl(paymentRepository, laundryService, bookingService, orderService, notificationService)`
 - `OrderServiceImpl(orderRepository, studentRepository, productRepository)`
+
+## Email verification
+
+New accounts must confirm their email address before they can log in.
+
+How it works:
+1. `POST /student/create` saves the student as unverified and emails a link: `<app.frontend-url>/verify-email?token=...`.
+2. The React page `/verify-email` sends the token to `POST /student/verify-email`.
+3. A valid token marks the student verified (`email_verified`, `email_verified_at`). Invalid, used and expired (24 hours) tokens are rejected with 400.
+4. `POST /student/login` returns 403 with a message while the email is unverified (only after the password is correct).
+5. `POST /student/resend-verification` sends a new link and cancels the old one. Asking again within 60 seconds gives 429; a mail failure gives 503. The reply is the same for unknown and already-verified emails.
+6. Changing the email in `POST /student/update` marks the new address unverified and sends a new link.
+
+Only a SHA-256 hash of each token is stored (new table `email_verification_token`).
+
+To send real emails, fill in the `spring.mail.*` lines in `application.properties` (they are commented out). Until `spring.mail.host` is set, the verification link is printed in the backend console instead.
+
+Existing accounts: the new `email_verified` column defaults to false, so students registered before this change must verify once. On the login page they get a "Send a new verification email" button. To skip that for existing test accounts, run:
+
+    UPDATE student SET email_verified = 1, email_verified_at = NOW();
+
+New dependency: `spring-boot-starter-mail` (run a Maven reload in IntelliJ).
+
+New and changed endpoints:
+
+| Method and path | Purpose |
+|---|---|
+| POST `/student/verify-email` | Body `{ "token" }`. 200, or 400 when the token is invalid or expired. |
+| POST `/student/resend-verification` | Body `{ "email" }`. 200, 429 or 503. |
+| POST `/student/login` | Now also returns 403 while the email is unverified. |
