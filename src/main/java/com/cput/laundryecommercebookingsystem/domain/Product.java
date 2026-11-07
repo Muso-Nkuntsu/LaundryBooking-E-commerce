@@ -5,6 +5,7 @@
  */
 package com.cput.laundryecommercebookingsystem.domain;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -29,6 +30,14 @@ public class Product {
     private String category;
     private int inventoryQuantity;
 
+    /** Path of the uploaded picture, for example /uploads/products/ab12.jpg. Empty when there is none. */
+    @Column(length = 255)
+    private String imageUrl;
+
+    /** A deactivated product is hidden from the shop but kept for past orders. */
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean active = true;
+
     /**
      * Default constructor required by JPA.
      */
@@ -45,6 +54,8 @@ public class Product {
         this.price = builder.price;
         this.category = builder.category;
         this.inventoryQuantity = builder.inventoryQuantity;
+        this.imageUrl = builder.imageUrl;
+        this.active = builder.active;
     }
 
     public Long getProductId() {
@@ -69,6 +80,14 @@ public class Product {
 
     public int getInventoryQuantity() {
         return inventoryQuantity;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public boolean isActive() {
+        return active;
     }
 
     @Override
@@ -109,6 +128,8 @@ public class Product {
         private double price;
         private String category;
         private int inventoryQuantity;
+        private String imageUrl;
+        private boolean active = true;
 
         public Builder setProductId(Long productId) {
             this.productId = productId;
@@ -140,6 +161,16 @@ public class Product {
             return this;
         }
 
+        public Builder setImageUrl(String imageUrl) {
+            this.imageUrl = imageUrl;
+            return this;
+        }
+
+        public Builder setActive(boolean active) {
+            this.active = active;
+            return this;
+        }
+
         public Builder copy(Product product) {
             this.productId = product.productId;
             this.name = product.name;
@@ -147,6 +178,8 @@ public class Product {
             this.price = product.price;
             this.category = product.category;
             this.inventoryQuantity = product.inventoryQuantity;
+            this.imageUrl = product.imageUrl;
+            this.active = product.active;
             return this;
         }
 

@@ -16,6 +16,9 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.NoSuchElementException;
@@ -91,6 +94,17 @@ public class GlobalExceptionHandler {
             MissingServletRequestParameterException.class})
     public ResponseEntity<String> handleMalformed(Exception ex) {
         return ResponseEntity.badRequest().body("The request is missing information or has an invalid value.");
+    }
+
+    /** A picture bigger than spring.servlet.multipart.max-file-size. */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<String> handleTooLarge(MaxUploadSizeExceededException ex) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body("The picture must be 2 MB or smaller.");
+    }
+
+    @ExceptionHandler({MultipartException.class, MissingServletRequestPartException.class})
+    public ResponseEntity<String> handleBadUpload(Exception ex) {
+        return ResponseEntity.badRequest().body("Choose a picture to upload.");
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

@@ -34,7 +34,8 @@ public class ProductController {
     @GetMapping("/read/{id}")
     public ResponseEntity<Product> read(@PathVariable Long id) {
         Product product = productService.read(id);
-        if (product == null) {
+        // A deactivated product is hidden from the shop (the admin dashboard still sees it).
+        if (product == null || !product.isActive()) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(product);
@@ -60,6 +61,6 @@ public class ProductController {
 
     @GetMapping("/getall")
     public ResponseEntity<List<Product>> getAll() {
-        return ResponseEntity.ok(productService.getAll());
+        return ResponseEntity.ok(productService.getAll().stream().filter(Product::isActive).toList());
     }
 }

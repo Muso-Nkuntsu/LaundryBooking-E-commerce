@@ -72,6 +72,9 @@ public class OrderServiceImpl implements IOrderService {
             Product product = productRepository.findById(line.getKey())
                     .orElseThrow(() -> new NoSuchElementException("Product not found with id: " + line.getKey()));
             int quantity = line.getValue();
+            if (!product.isActive()) {
+                throw new IllegalStateException(product.getName() + " is no longer sold. Remove it from your cart.");
+            }
             if (product.getInventoryQuantity() < quantity) {
                 throw new IllegalStateException("Only " + product.getInventoryQuantity() + " of "
                         + product.getName() + " left in stock");

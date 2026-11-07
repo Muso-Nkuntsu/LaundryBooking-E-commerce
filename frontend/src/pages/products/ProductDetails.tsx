@@ -6,6 +6,7 @@ import { useFetch } from "../../hooks/useFetch";
 import { useToast } from "../../context/useToast";
 import { useCart } from "../../context/useCart";
 import { getProductById } from "../../services/productService";
+import { assetUrl } from "../../services/Api";
 import { friendlyError } from "../../utilis/errorMessage";
 import { formatCurrency } from "../../utilis/FormatCurrency";
 
@@ -55,7 +56,11 @@ function ProductDetails() {
     <div className="page">
       {back}
       <section className="card grid grid-2" style={{ gap: 28 }}>
-        <div className="product-art big" aria-hidden="true"><Icon name="bag" size={80} /></div>
+        {product.imageUrl ? (
+          <img className="product-art big" src={assetUrl(product.imageUrl)} alt={product.name} style={{ width: "100%", objectFit: "cover" }} />
+        ) : (
+          <div className="product-art big" aria-hidden="true"><Icon name="bag" size={80} /></div>
+        )}
         <div className="stack">
           <span className="muted small">{product.category || "Laundry"}</span>
           <h1>{product.name}</h1>
