@@ -5,6 +5,12 @@ import { clearSession, getToken } from "./session";
 const BASE_URL: string =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
+/** Full address of a file the backend serves, such as a product picture ("/uploads/products/x.jpg"). */
+export const assetUrl = (path?: string | null): string | undefined => {
+  if (!path) return undefined;
+  return /^https?:\/\//.test(path) ? path : `${BASE_URL}${path}`;
+};
+
 export class ApiError extends Error {
   status: number;
 
@@ -81,6 +87,22 @@ const request = async <T>(method: string, path: string, { params, body }: Reques
     throw new ApiError("Your session has ended. Please log in again.", 401);
   }
 
+  return handleResponse<T>(response);
+};
+
+/** Sends a file as a form upload (the browser sets the multipart Content-Type itself). */
+export const apiUpload = async <T>(path: string, form: FormData): Promise<T> => {
+  const token = getToken();
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: form,
+  });
+  if (response.status === 401) {
+    clearSession();
+    window.location.assign("/login?expired=1");
+    throw new ApiError("Your session has ended. Please log in again.", 401);
+  }
   return handleResponse<T>(response);
 };
 

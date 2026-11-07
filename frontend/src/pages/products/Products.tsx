@@ -7,6 +7,7 @@ import { useFetch } from "../../hooks/useFetch";
 import { useToast } from "../../context/useToast";
 import { useCart } from "../../context/useCart";
 import { getAllProducts } from "../../services/productService";
+import { assetUrl } from "../../services/Api";
 import { friendlyError } from "../../utilis/errorMessage";
 import { formatCurrency } from "../../utilis/FormatCurrency";
 
@@ -71,7 +72,11 @@ function Products() {
           const inCart = cart.quantityOf(product.productId);
           return (
             <article className="card tile hoverable" key={product.productId}>
-              <div className="product-art" aria-hidden="true"><Icon name="bag" size={44} /></div>
+              {product.imageUrl ? (
+                <img className="product-art" src={assetUrl(product.imageUrl)} alt="" style={{ width: "100%", objectFit: "cover" }} />
+              ) : (
+                <div className="product-art" aria-hidden="true"><Icon name="bag" size={44} /></div>
+              )}
               <span className="muted small">{product.category || "Laundry"}</span>
               <h2>{product.name}</h2>
               <p className="muted">{product.description || "Laundry product for student use."}</p>

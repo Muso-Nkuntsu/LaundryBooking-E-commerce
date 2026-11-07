@@ -68,7 +68,8 @@ public class SecurityConfig {
                         "/student/forgot-password", "/student/reset-password").permitAll()
                 .requestMatchers(HttpMethod.GET, "/product/getall", "/product/read/**",
                         "/laundry-service/getall", "/laundry-service/read/**",
-                        "/review/getall", "/review/read/**", "/review/service/**", "/review/summary").permitAll()
+                        "/review/getall", "/review/read/**", "/review/service/**", "/review/summary",
+                        "/uploads/**").permitAll() // product pictures
 
                 // ---- ADMIN only ----
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")

@@ -15,6 +15,12 @@ const PATHS = {
   logout: "M10 4.5H5v15h5M14 8l4 4-4 4M18 12H9",
   check: "M5 12.5l4.5 4.5L19 7.5",
   arrowLeft: "M11 6l-6 6 6 6M5 12h14",
+  shield: "M12 3.5l7 3v5c0 4.6-3 7.9-7 9.5-4-1.6-7-4.9-7-9.5v-5zM9 12l2 2 4-4",
+  users: "M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM3 20a6 6 0 0 1 12 0M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.5a6 6 0 0 1 3 5.5",
+  chart: "M4 20.5h16M7 17V11M12 17V6.5M17 17v-8",
+  box: "M4 7.5 12 3.5l8 4v9l-8 4-8-4zM4 7.5l8 4 8-4M12 11.5v9",
+  clock: "M12 20.5a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17zM12 7.5V12l3 2",
+  washer: "M5 3.5h14v17H5zM5 8h14M8 5.8h.01M12 17.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z",
 } as const;
 
 export type IconName = keyof typeof PATHS;

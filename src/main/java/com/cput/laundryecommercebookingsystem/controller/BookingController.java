@@ -11,7 +11,9 @@ import com.cput.laundryecommercebookingsystem.security.CurrentStudent;
 import com.cput.laundryecommercebookingsystem.service.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -57,6 +59,7 @@ public class BookingController {
          * so it cannot be changed in the browser.
          */
         @PostMapping
+        @Transactional // keeps the machine row locked until the booking is saved
         public ResponseEntity<Booking> createBooking(@RequestParam(required = false) Long studentId,
                                                      @RequestParam Long machineId,
                                                      @RequestParam Long timeSlotId,
@@ -66,11 +69,20 @@ public class BookingController {
             Student student = studentRepository.findById(ownerId)
                     .orElseThrow(() -> notFound("Student", ownerId));
 
-            LaundryMachine machine = laundryMachineRepository.findById(machineId)
+            // Locked: a second booking for this machine waits here until the first is saved,
+            // then the double-booking check in BookingServiceImpl sees it.
+            LaundryMachine machine = laundryMachineRepository.findByIdForUpdate(machineId)
                     .orElseThrow(() -> notFound("LaundryMachine", machineId));
 
             TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
                     .orElseThrow(() -> notFound("TimeSlot", timeSlotId));
+            if (!timeSlot.isAvailable()) {
+                throw new IllegalStateException("This time slot has been closed. Please choose another one.");
+            }
+            if (timeSlot.getDate() != null && timeSlot.getStartTime() != null
+                    && LocalDateTime.of(timeSlot.getDate(), timeSlot.getStartTime()).isBefore(LocalDateTime.now())) {
+                throw new IllegalArgumentException("This time slot has already started. Please choose a later one.");
+            }
 
             LaundryService laundryService = null;
             if (serviceId != null) {

@@ -71,7 +71,8 @@ function Login() {
       setSubmitting(true);
       const { token, student } = await loginStudent(email.trim(), password);
       saveSession(student, token);
-      navigate("/dashboard");
+      // Administrators start on the admin dashboard; everyone else on the student home page.
+      navigate(student.role === "ADMIN" ? "/admin" : "/dashboard");
     } catch (error) {
       // 403 means the password was right but the email address is not verified yet.
       setNeedsVerification(error instanceof ApiError && error.status === 403);

@@ -1,4 +1,4 @@
-import type { OrderStatus } from "./order";
+import type { OrderStatus } from "./Order";
 
 // Shape of an order item as returned by the backend (/order-item/...).
 export interface OrderItem {

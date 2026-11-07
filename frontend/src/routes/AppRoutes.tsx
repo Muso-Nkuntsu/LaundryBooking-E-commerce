@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import RequireLogin from "../components/layout/RequireLogin";
+import RequireAdmin from "../components/layout/RequireAdmin";
 import { ToastProvider } from "../context/ToastProvider";
 import { CartProvider } from "../context/CartProvider";
 
@@ -32,8 +33,18 @@ import Cart from "../pages/cart/Cart";
 import NotificationsPage from "../pages/notifications/NotificationPage";
 import ReviewsPage from "../pages/reviews/ReviewPage";
 
+import AdminDashboard from "../pages/admin/AdminDashboard";
+import AdminUsers from "../pages/admin/AdminUsers";
+import AdminBookings from "../pages/admin/AdminBookings";
+import AdminFacilities from "../pages/admin/AdminFacilities";
+import AdminProducts from "../pages/admin/AdminProducts";
+import AdminOrders from "../pages/admin/AdminOrders";
+import AdminReports from "../pages/admin/AdminReports";
+
 // Every page except login and register needs a logged-in student.
 const withNav = (page: ReactNode) => <RequireLogin>{page}</RequireLogin>;
+// Admin pages: only for accounts with the ADMIN role.
+const asAdmin = (page: ReactNode) => <RequireAdmin>{page}</RequireAdmin>;
 
 const AppRoutes: React.FC = () => {
   return (
@@ -75,6 +86,15 @@ const AppRoutes: React.FC = () => {
 
           {/* Orders */}
           <Route path="/order-items" element={withNav(<OrderItems />)} />
+
+          {/* Admin dashboard */}
+          <Route path="/admin" element={asAdmin(<AdminDashboard />)} />
+          <Route path="/admin/users" element={asAdmin(<AdminUsers />)} />
+          <Route path="/admin/bookings" element={asAdmin(<AdminBookings />)} />
+          <Route path="/admin/facilities" element={asAdmin(<AdminFacilities />)} />
+          <Route path="/admin/products" element={asAdmin(<AdminProducts />)} />
+          <Route path="/admin/orders" element={asAdmin(<AdminOrders />)} />
+          <Route path="/admin/reports" element={asAdmin(<AdminReports />)} />
 
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />

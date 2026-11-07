@@ -7,7 +7,7 @@ import type { IconName } from "../common/Icon";
 import { useFetch } from "../../hooks/useFetch";
 import { useCart } from "../../context/useCart";
 import { notificationService } from "../../services/notificationService";
-import { clearSession, getInitials, getStudentId } from "../../services/session";
+import { clearSession, getInitials, getStudentId, isAdmin } from "../../services/session";
 
 const NAV: { to: string; label: string }[] = [
   { to: "/dashboard", label: "Home" },
@@ -59,6 +59,12 @@ function AppLayout({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="topbar-actions">
+          {isAdmin() && (
+            <Link to="/admin" className="btn btn-sun btn-sm" title="Open the admin dashboard">
+              <Icon name="shield" size={18} />
+              Admin
+            </Link>
+          )}
           <Link to="/cart" className="icon-btn" aria-label={cart.count > 0 ? `Cart, ${cart.count} items` : "Cart"}>
             <Icon name="cart" />
             {cart.count > 0 && <span className="count">{cart.count > 99 ? "99+" : cart.count}</span>}
