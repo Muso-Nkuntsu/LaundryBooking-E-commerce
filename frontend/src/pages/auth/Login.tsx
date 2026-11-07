@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import AuthLayout from "../../components/layout/AuthLayout";
 import TextField from "../../components/common/TextField";
 import { ApiError } from "../../services/Api";
@@ -13,7 +13,9 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const routeState = location.state as { email?: string; justRegistered?: boolean } | null;
+  const [searchParams] = useSearchParams();
+  const sessionExpired = searchParams.get("expired") === "1";
+  const routeState = location.state as { email?: string; justRegistered?: boolean; passwordReset?: boolean } | null;
   const registeredEmail = routeState?.email;
 
   const [email, setEmail] = useState(registeredEmail ?? "");
@@ -23,7 +25,11 @@ function Login() {
   const [notice, setNotice] = useState(
     routeState?.justRegistered
       ? "Account created. We've sent a verification link to your email. Open it, then log in."
-      : "",
+      : routeState?.passwordReset
+        ? "Your password has been changed. Log in with your new password."
+        : sessionExpired
+          ? "Your session has ended. Please log in again."
+          : "",
   );
   const [needsVerification, setNeedsVerification] = useState(false);
   const [resending, setResending] = useState(false);
@@ -63,8 +69,8 @@ function Login() {
 
     try {
       setSubmitting(true);
-      const student = await loginStudent(email.trim(), password);
-      saveSession(student);
+      const { token, student } = await loginStudent(email.trim(), password);
+      saveSession(student, token);
       navigate("/dashboard");
     } catch (error) {
       // 403 means the password was right but the email address is not verified yet.
@@ -118,6 +124,9 @@ function Login() {
           onChange={setPassword}
           error={errors.password}
         />
+        <p className="small">
+          <Link to="/forgot-password">Forgot your password?</Link>
+        </p>
         <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
           {submitting ? "Logging in..." : "Log in"}
         </button>

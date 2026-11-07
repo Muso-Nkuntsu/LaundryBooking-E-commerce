@@ -6,6 +6,7 @@ Author: Sabotseng Ndaba(230235875)
 Date: 25 July 2026
  */
 
+import com.cput.laundryecommercebookingsystem.domain.enums.Role;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -46,6 +47,17 @@ public class Student {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private LocalDateTime emailVerifiedAt;
 
+    // Set by an administrator only; a client cannot send these in a request body.
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private Role role;
+
+    // A deactivated account cannot log in, and its token stops working straight away.
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean disabled;
+
     protected Student(){
     }
 
@@ -59,24 +71,31 @@ public class Student {
         this.createdAt = builder.createdAt;
         this.emailVerified = builder.emailVerified;
         this.emailVerifiedAt = builder.emailVerifiedAt;
+        this.role = builder.role;
+        this.disabled = builder.disabled;
     }
 
     //Getters
     public Long getStudentId() {
         return studentId;
     }
+
     public String getFirstName() {
         return firstName;
     }
+
     public String getLastName() {
         return lastName;
     }
+
     public String getEmail() {
         return email;
     }
+
     public String getPhoneNumber() {
         return phoneNumber;
     }
+
     public String getPassword() {
         return password;
     }
@@ -93,10 +112,30 @@ public class Student {
         return emailVerifiedAt;
     }
 
-    /** Marks the email address as confirmed. Called once a valid verification link is used. */
+    /** Accounts created before roles were added have no role yet, so they count as USER. */
+    public Role getRole() {
+        return role == null ? Role.USER : role;
+    }
+
+    public boolean isDisabled() {
+        return disabled;
+    }
+
     public void markEmailVerified(LocalDateTime verifiedAt) {
         this.emailVerified = true;
         this.emailVerifiedAt = verifiedAt;
+    }
+
+    public void changePasswordHash(String passwordHash) {
+        this.password = passwordHash;
+    }
+
+    public void changeRole(Role role) {
+        this.role = role;
+    }
+
+    public void setDisabled(boolean disabled) {
+        this.disabled = disabled;
     }
 
     //Builder Pattern
@@ -110,18 +149,19 @@ public class Student {
         private LocalDateTime createdAt;
         private boolean emailVerified;
         private LocalDateTime emailVerifiedAt;
+        private Role role;
+        private boolean disabled;
 
         public Builder setStudentId(Long studentId){
-        this.studentId = studentId;
-        return this;
+            this.studentId = studentId;
+            return this;
         }
-
         public Builder setFirstName(String firstName){
             this.firstName = firstName;
             return this;
         }
         public Builder setLastName(String lastName){
-            this.lastName= lastName;
+            this.lastName = lastName;
             return this;
         }
         public Builder setEmail(String email){
@@ -148,10 +188,18 @@ public class Student {
             this.emailVerifiedAt = emailVerifiedAt;
             return this;
         }
+        public Builder setRole(Role role){
+            this.role = role;
+            return this;
+        }
+        public Builder setDisabled(boolean disabled){
+            this.disabled = disabled;
+            return this;
+        }
 
-public Student build(){
-return new Student(this);
-}
+        public Student build(){
+            return new Student(this);
+        }
     }
 
     @Override
@@ -168,15 +216,7 @@ return new Student(this);
 
     @Override
     public String toString() {
-        return "Student{" +
-                "studentId=" + studentId +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", email='" + email + '\'' +
-                ", phoneNumber='" + phoneNumber + '\'' +
-                ", password='" + password + '\'' +
-                ", createdAt=" + createdAt +
-                ", emailVerified=" + emailVerified +
-                '}';
+        // No password hash or personal details, so nothing sensitive ends up in a log.
+        return "Student{studentId=" + studentId + ", role=" + getRole() + "}";
     }
 }

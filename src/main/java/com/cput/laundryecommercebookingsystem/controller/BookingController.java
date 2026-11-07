@@ -7,6 +7,7 @@ package com.cput.laundryecommercebookingsystem.controller;
 import com.cput.laundryecommercebookingsystem.domain.*;
 import com.cput.laundryecommercebookingsystem.domain.enums.BookingStatus;
 import com.cput.laundryecommercebookingsystem.repository.*;
+import com.cput.laundryecommercebookingsystem.security.CurrentStudent;
 import com.cput.laundryecommercebookingsystem.service.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,17 +33,20 @@ public class BookingController {
         private final ILaundryMachineRepository laundryMachineRepository;
         private final TimeSlotRepository timeSlotRepository;
         private final ILaundryServiceRepository laundryServiceRepository;
+        private final CurrentStudent currentStudent;
 
         public BookingController(IBookingService bookingService,
                                  IStudentRepository studentRepository,
                                  ILaundryMachineRepository laundryMachineRepository,
                                  TimeSlotRepository timeSlotRepository,
-                                 ILaundryServiceRepository laundryServiceRepository) {
+                                 ILaundryServiceRepository laundryServiceRepository,
+                                 CurrentStudent currentStudent) {
             this.bookingService = bookingService;
             this.studentRepository = studentRepository;
             this.laundryMachineRepository = laundryMachineRepository;
             this.timeSlotRepository = timeSlotRepository;
             this.laundryServiceRepository = laundryServiceRepository;
+            this.currentStudent = currentStudent;
         }
 
         // ---------- CREATE ----------
@@ -53,12 +57,14 @@ public class BookingController {
          * so it cannot be changed in the browser.
          */
         @PostMapping
-        public ResponseEntity<Booking> createBooking(@RequestParam Long studentId,
+        public ResponseEntity<Booking> createBooking(@RequestParam(required = false) Long studentId,
                                                      @RequestParam Long machineId,
                                                      @RequestParam Long timeSlotId,
                                                      @RequestParam (required = false) Long serviceId) {
-            Student student = studentRepository.findById(studentId)
-                    .orElseThrow(() -> notFound("Student", studentId));
+            // A student always books for themselves; only an admin may book for someone else.
+            Long ownerId = currentStudent.resolveStudentId(studentId);
+            Student student = studentRepository.findById(ownerId)
+                    .orElseThrow(() -> notFound("Student", ownerId));
 
             LaundryMachine machine = laundryMachineRepository.findById(machineId)
                     .orElseThrow(() -> notFound("LaundryMachine", machineId));
@@ -82,6 +88,7 @@ public class BookingController {
 
         // ---------- READ ----------
 
+        /** Admin only (SecurityConfig). */
         @GetMapping
         public ResponseEntity<List<Booking>> getAllBookings() {
             return ResponseEntity.ok(bookingService.findAll());
@@ -91,11 +98,13 @@ public class BookingController {
         public ResponseEntity<Booking> getBookingById(@PathVariable Long id) {
             Booking booking = bookingService.findById(id)
                     .orElseThrow(() -> notFound("Booking", id));
+            currentStudent.checkOwner(booking.getStudent());
             return ResponseEntity.ok(booking);
         }
 
         @GetMapping("/student/{studentId}")
         public ResponseEntity<List<Booking>> getBookingsByStudent(@PathVariable Long studentId) {
+            currentStudent.checkOwner(studentId);
             Student student = studentRepository.findById(studentId)
                     .orElseThrow(() -> notFound("Student", studentId));
             return ResponseEntity.ok(bookingService.findByStudent(student));
@@ -103,6 +112,7 @@ public class BookingController {
 
         // ---------- UPDATE ----------
 
+        /** Admin only (SecurityConfig). */
         @PutMapping("/{id}/status")
         public ResponseEntity<Booking> updateStatus(@PathVariable Long id,
                                                     @RequestBody BookingStatus status) {
@@ -111,11 +121,15 @@ public class BookingController {
 
         @PutMapping("/{id}/cancel")
         public ResponseEntity<Booking> cancelBooking(@PathVariable Long id) {
+            Booking booking = bookingService.findById(id)
+                    .orElseThrow(() -> notFound("Booking", id));
+            currentStudent.checkOwner(booking.getStudent());
             return ResponseEntity.ok(bookingService.cancelBooking(id));
         }
 
         // ---------- DELETE ----------
 
+        /** Admin only (SecurityConfig). */
         @DeleteMapping("/{id}")
         public ResponseEntity<Void> deleteBooking(@PathVariable Long id) {
             bookingService.deleteBooking(id);
