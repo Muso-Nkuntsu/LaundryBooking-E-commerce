@@ -8,4 +8,6 @@ export interface Student{
     createdAt?: string;
     emailVerified?: boolean;
     emailVerifiedAt?: string;
+    role?: "USER" | "ADMIN";
+    disabled?: boolean;
 }

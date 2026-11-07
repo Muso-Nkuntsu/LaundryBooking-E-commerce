@@ -72,6 +72,11 @@ public class PaymentServiceImpl implements PaymentService {
                                  Long bookingId, Long orderId, Long serviceId,
                                  String payerName, String payerBank) {
 
+        // The amount always comes from a booking or an order, never from the browser.
+        if (bookingId == null && orderId == null) {
+            throw new IllegalArgumentException("Choose the booking or order you are paying for");
+        }
+
         String method = paymentMethod == null ? "" : paymentMethod.trim().toUpperCase();
         if (!method.equals("CARD") && !method.equals("EFT")) {
             throw new IllegalArgumentException("Payment method must be CARD or EFT");

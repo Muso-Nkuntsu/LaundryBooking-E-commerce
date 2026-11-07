@@ -45,3 +45,7 @@ dist/
 
 # Keep the shared configuration template
 !/src/main/resources/application.properties.example
+.env
+!.env.example
+
+src/main/resources/application.properties
