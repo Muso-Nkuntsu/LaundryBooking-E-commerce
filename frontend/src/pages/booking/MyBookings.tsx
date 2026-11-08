@@ -4,6 +4,7 @@ import type { Booking } from "../../types/booking";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { EmptyState, ErrorState, Loading } from "../../components/common/States";
 import { useFetch } from "../../hooks/useFetch";
+import { useAwaitingEft } from "../../hooks/useAwaitingEft";
 import { useToast } from "../../context/useToast";
 import { bookingService } from "../../services/bookingService";
 import { getStudentId } from "../../services/session";
@@ -46,6 +47,8 @@ function MyBookings() {
 
   const bookings = (data ?? []).slice().sort(byDateAscending);
   const visible = bookings.filter((booking) => matches(booking, filter));
+  const unpaidIds = bookings.filter((booking) => booking.status === "PENDING" && booking.totalAmount > 0).map((booking) => booking.id);
+  const awaitingEft = useAwaitingEft("booking", unpaidIds);
 
   const handleCancel = async () => {
     if (!toCancel) return;
@@ -67,7 +70,7 @@ function MyBookings() {
       <header className="page-head">
         <div>
           <h1>My bookings</h1>
-          <p>Everything you've booked, with the option to cancel what's still ahead.</p>
+          <p>Everything you've booked. Bookings awaiting payment are held for you until you pay or cancel.</p>
         </div>
         <Link to="/make-booking" className="btn btn-primary">Book a machine</Link>
       </header>
@@ -120,8 +123,21 @@ function MyBookings() {
                       <p className="small muted">Booking #{booking.id}, {formatCurrency(booking.totalAmount ?? 0)}</p>
                     </div>
                     <div className="booking-actions">
-                      {/* Only allow cancellation if confirmed */}
-                      {booking.status === "CONFIRMED" && (
+                      {booking.status === "PENDING" && booking.totalAmount > 0 && (
+                        awaitingEft.has(booking.id) ? (
+                          <span className="pill pill-info">EFT being verified</span>
+                        ) : (
+                          <Link
+                            to="/payment"
+                            state={{ amount: booking.totalAmount, description: `Booking #${booking.id}`, bookingId: booking.id }}
+                            className="btn btn-primary btn-sm"
+                          >
+                            Pay now
+                          </Link>
+                        )
+                      )}
+                      {/* Bookings that haven't happened yet can be cancelled, paid or not */}
+                      {(booking.status === "CONFIRMED" || booking.status === "PENDING") && (
                         <button type="button" className="btn btn-danger btn-sm" onClick={() => setToCancel(booking)}>
                           Cancel booking
                         </button>

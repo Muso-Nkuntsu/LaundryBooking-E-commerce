@@ -11,6 +11,15 @@ public class PaymentFactory {
     public static Payment createPayment(double amount, LocalDateTime paymentDate, String paymentMethod,
                                         String status, String transactionRef,
                                         Long bookingId, Long orderId, LaundryService service) {
+        return createPayment(amount, paymentDate, paymentMethod, status, transactionRef,
+                bookingId, orderId, service, null, null);
+    }
+
+    /** Same as above, plus the payer's name and bank for an EFT payment. */
+    public static Payment createPayment(double amount, LocalDateTime paymentDate, String paymentMethod,
+                                        String status, String transactionRef,
+                                        Long bookingId, Long orderId, LaundryService service,
+                                        String payerName, String payerBank) {
 
         if (amount <= 0) {
             throw new IllegalArgumentException("Amount must be greater than zero");
@@ -37,6 +46,8 @@ public class PaymentFactory {
                 .setBookingId(bookingId)
                 .setOrderId(orderId)
                 .setService(service)
+                .setPayerName(payerName)
+                .setPayerBank(payerBank)
                 .build();
     }
 }

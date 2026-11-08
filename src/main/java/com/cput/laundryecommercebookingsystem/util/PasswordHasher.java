@@ -31,6 +31,15 @@ public final class PasswordHasher {
         return PREFIX + "$" + ITERATIONS + "$" + encoder.encodeToString(salt) + "$" + encoder.encodeToString(hash);
     }
 
+    /** One password rule for registering, updating a profile and resetting a password. */
+    public static void requireStrong(String rawPassword) {
+        if (rawPassword == null || rawPassword.length() < 8 || rawPassword.length() > 128
+                || !rawPassword.matches(".*[A-Za-z].*") || !rawPassword.matches(".*\\d.*")) {
+            throw new IllegalArgumentException(
+                    "Password must be 8 to 128 characters and include a letter and a number.");
+        }
+    }
+
     public static boolean isHashed(String stored) {
         return stored != null && stored.startsWith(PREFIX + "$");
     }

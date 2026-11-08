@@ -58,9 +58,11 @@ public class LaundryRoomController {
     @PutMapping("/{id}/update")
     public ResponseEntity<LaundryRoom> updateRoom(
             @PathVariable Long id,
+            // Query parameters, like /create. (A method can only read one @RequestBody,
+            // so the old three-@RequestBody version always failed.)
             @RequestParam String location,
             @RequestParam int capacity,
-            @RequestParam String description) {
+            @RequestParam(required = false, defaultValue = "") String description) {
 
         return ResponseEntity.ok(
                 service.updateRoom(id, location, capacity, description)

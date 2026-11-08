@@ -36,7 +36,9 @@ function validate(values: Values): Errors {
   if (!values.phoneNumber.trim()) errors.phoneNumber = "Enter your phone number.";
   else if (!PHONE_PATTERN.test(values.phoneNumber.trim())) errors.phoneNumber = "Use digits only, for example 082 123 4567.";
   if (!values.password) errors.password = "Choose a password.";
-  else if (values.password.length < 6) errors.password = "Use at least 6 characters.";
+  else if (values.password.length < 8 || !/[A-Za-z]/.test(values.password) || !/\d/.test(values.password)) {
+    errors.password = "Use at least 8 characters, with a letter and a number.";
+  }
   if (!values.confirmPassword) errors.confirmPassword = "Type your password again.";
   else if (values.password !== values.confirmPassword) errors.confirmPassword = "The passwords don't match.";
   return errors;
@@ -80,8 +82,8 @@ function Register() {
     try {
       setSubmitting(true);
       await createStudent({ ...student, password: values.password });
-      toast.success("Account created. Log in to continue.");
-      navigate("/login", { state: { email: student.email } });
+      toast.success("Account created. Check your email for a verification link.");
+      navigate("/login", { state: { email: student.email, justRegistered: true } });
     } catch (error) {
       setServerError(friendlyError(error, "We couldn't create your account. Try again."));
     } finally {
@@ -107,7 +109,7 @@ function Register() {
           <TextField className="span-2" label="Email" type="email" autoComplete="email" placeholder="you@university.ac.za" {...fieldProps("email")} />
           <TextField className="span-2" label="Phone number" type="tel" autoComplete="tel" placeholder="082 123 4567" {...fieldProps("phoneNumber")} />
           <div className="span-2">
-            <TextField label="Password" type="password" autoComplete="new-password" hint="At least 6 characters." {...fieldProps("password")} />
+            <TextField label="Password" type="password" autoComplete="new-password" hint="At least 8 characters, with a letter and a number." {...fieldProps("password")} />
             {values.password && (
               <div className="row small muted" style={{ marginTop: 8 }}>
                 <div className="strength" data-level={strength} style={{ flex: 1 }} aria-hidden="true">

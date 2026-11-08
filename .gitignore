@@ -39,3 +39,13 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 dist/
+
+# Local Spring Boot configuration containing developer credentials
+/src/main/resources/application.properties
+
+# Keep the shared configuration template
+!/src/main/resources/application.properties.example
+.env
+!.env.example
+
+src/main/resources/application.properties

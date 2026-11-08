@@ -36,6 +36,13 @@ public class Payment {
     @Column(name = "order_id")
     private Long orderId;
 
+    // EFT only: who paid and from which bank, so the payment can be matched on the bank statement.
+    @Column(name = "payer_name")
+    private String payerName;
+
+    @Column(name = "payer_bank")
+    private String payerBank;
+
     @ManyToOne
     @JoinColumn(name = "service_id") // optional: a payment can be for a booking or an order only
     private LaundryService service;
@@ -53,6 +60,8 @@ public class Payment {
         this.bookingId = builder.bookingId;
         this.orderId = builder.orderId;
         this.service = builder.service;
+        this.payerName = builder.payerName;
+        this.payerBank = builder.payerBank;
     }
 
     public static Builder builder() {
@@ -86,6 +95,12 @@ public class Payment {
     public LaundryService getService() {
         return service;
     }
+    public String getPayerName() {
+        return payerName;
+    }
+    public String getPayerBank() {
+        return payerBank;
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -118,6 +133,8 @@ public class Payment {
                 ", bookingId=" + bookingId +
                 ", orderId=" + orderId +
                 ", service=" + service +
+                ", payerName='" + payerName + '\'' +
+                ", payerBank='" + payerBank + '\'' +
                 '}';
     }
     public static class Builder {
@@ -130,6 +147,8 @@ public class Payment {
         private Long bookingId;
         private Long orderId;
         private LaundryService service;
+        private String payerName;
+        private String payerBank;
 
         public Builder setPaymentId(Long paymentId) {
             this.paymentId = paymentId;
@@ -165,6 +184,14 @@ public class Payment {
         }
         public Builder setService(LaundryService service) {
             this.service = service;
+            return this;
+        }
+        public Builder setPayerName(String payerName) {
+            this.payerName = payerName;
+            return this;
+        }
+        public Builder setPayerBank(String payerBank) {
+            this.payerBank = payerBank;
             return this;
         }
         public Payment build() {

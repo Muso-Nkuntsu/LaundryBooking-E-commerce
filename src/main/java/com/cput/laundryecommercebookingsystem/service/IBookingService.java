@@ -22,6 +22,7 @@ public interface IBookingService {
                          LaundryService laundryService,
                          double totalAmount);
 
+        Booking confirmBooking(Long bookingId);
         Booking cancelBooking(Long bookingId);
         Booking updateStatus(Long bookingId, BookingStatus status);
         Booking deleteBooking(Long bookingId);

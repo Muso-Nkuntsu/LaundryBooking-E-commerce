@@ -1,7 +1,15 @@
 // One place for every call to the backend.
 // Set VITE_API_BASE_URL in a .env file to point at a different server.
+import { clearSession, getToken } from "./session";
+
 const BASE_URL: string =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+
+/** Full address of a file the backend serves, such as a product picture ("/uploads/products/x.jpg"). */
+export const assetUrl = (path?: string | null): string | undefined => {
+  if (!path) return undefined;
+  return /^https?:\/\//.test(path) ? path : `${BASE_URL}${path}`;
+};
 
 export class ApiError extends Error {
   status: number;
@@ -54,12 +62,47 @@ interface RequestOptions {
   body?: unknown;
 }
 
+// Login, register and the email links work without a token, so a 401 there is just a wrong password.
+const PUBLIC_PATHS = ["/student/login", "/student/create", "/student/verify-email",
+  "/student/resend-verification", "/student/forgot-password", "/student/reset-password"];
+
 const request = async <T>(method: string, path: string, { params, body }: RequestOptions = {}): Promise<T> => {
+  const headers: Record<string, string> = {};
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const response = await fetch(`${BASE_URL}${path}${buildQuery(params)}`, {
     method,
-    headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
+    headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+
+  // The token is missing, expired or the account was deactivated: log out and go to the login page.
+  if (response.status === 401 && !PUBLIC_PATHS.includes(path)) {
+    clearSession();
+    if (window.location.pathname !== "/login") {
+      window.location.assign("/login?expired=1");
+    }
+    throw new ApiError("Your session has ended. Please log in again.", 401);
+  }
+
+  return handleResponse<T>(response);
+};
+
+/** Sends a file as a form upload (the browser sets the multipart Content-Type itself). */
+export const apiUpload = async <T>(path: string, form: FormData): Promise<T> => {
+  const token = getToken();
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: form,
+  });
+  if (response.status === 401) {
+    clearSession();
+    window.location.assign("/login?expired=1");
+    throw new ApiError("Your session has ended. Please log in again.", 401);
+  }
   return handleResponse<T>(response);
 };
 
@@ -70,6 +113,9 @@ export const apiPost = <T>(path: string, body?: unknown, params?: QueryParams): 
 
 export const apiPut = <T>(path: string, body?: unknown, params?: QueryParams): Promise<T> =>
   request<T>("PUT", path, { body, params });
+
+export const apiPatch = <T>(path: string, body?: unknown, params?: QueryParams): Promise<T> =>
+  request<T>("PATCH", path, { body, params });
 
 export const apiDelete = <T = void>(path: string): Promise<T> => request<T>("DELETE", path);
 

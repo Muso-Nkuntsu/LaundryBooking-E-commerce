@@ -35,15 +35,28 @@ function BookingConfirmation() {
 
   const machine = booking.laundryMachine;
   const room = machine?.laundryRoom;
+  // A booking with a cost stays PENDING (machine held) until it is paid for.
+  const needsPayment = booking.status === "PENDING" && booking.totalAmount > 0;
+  const paymentState = { amount: booking.totalAmount, description: `Booking #${booking.id}`, bookingId: booking.id };
 
   return (
     <div className="page narrow">
       <div className="state" style={{ paddingTop: 8, paddingBottom: 24 }}>
-        <span className="tick">
-          <Icon name="check" size={36} />
-        </span>
-        <h1>Booking submitted</h1>
-        <p>{bookingDate(booking)}, {bookingTime(booking)}</p>
+        {needsPayment ? (
+          <>
+            <h1>Almost done: pay to confirm</h1>
+            <p>{bookingDate(booking)}, {bookingTime(booking)}</p>
+            <p className="muted">
+              We're holding this machine for you. The booking is confirmed once you've paid {formatCurrency(booking.totalAmount)}.
+            </p>
+          </>
+        ) : (
+          <>
+            <span className="tick"><Icon name="check" size={36} /></span>
+            <h1>You're booked</h1>
+            <p>{bookingDate(booking)}, {bookingTime(booking)}</p>
+          </>
+        )}
       </div>
 
       <section className="card">
@@ -73,12 +86,19 @@ function BookingConfirmation() {
       </section>
 
       <div className="btn-row" style={{ marginTop: 18 }}>
-        <Link to="/my-bookings" className="btn btn-primary">
-          View my bookings
-        </Link>
-        <Link to="/dashboard" className="btn btn-ghost">
-          Back to Dashboard
-        </Link>
+        {needsPayment ? (
+          <>
+            <Link to="/payment" state={paymentState} className="btn btn-primary">
+              Pay {formatCurrency(booking.totalAmount)} now
+            </Link>
+            <Link to="/my-bookings" className="btn btn-ghost">Pay later</Link>
+          </>
+        ) : (
+          <>
+            <Link to="/my-bookings" className="btn btn-primary">View my bookings</Link>
+            <Link to="/make-booking" className="btn btn-ghost">Book another</Link>
+          </>
+        )}
       </div>
     </div>
   );

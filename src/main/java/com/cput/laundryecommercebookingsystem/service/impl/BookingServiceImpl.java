@@ -51,11 +51,37 @@ public class BookingServiceImpl implements IBookingService {
             throw new IllegalStateException("This machine is already booked for the selected time slot");
         }
 
-        Booking booking = BookingFactory.createBooking(
-                student,laundryMachine,timeSlot,laundryService,totalAmount);
+        // A booking that costs money stays PENDING until it is paid for (see PaymentServiceImpl).
+        // A free booking (no service added) has nothing to pay, so it is confirmed straight away.
+        // A PENDING booking still holds the machine, so nobody else can take it while the student pays.
+        BookingStatus status = totalAmount > 0 ? BookingStatus.PENDING : BookingStatus.CONFIRMED;
+        Booking booking = BookingFactory.createBookingWithStatus(
+                student, laundryMachine, timeSlot, laundryService, totalAmount, status);
         Booking saved = bookingRepository.save(booking);
 
-        notificationService.sendBookingConfirmation(student, saved.getId());
+        if (status == BookingStatus.CONFIRMED) {
+            notificationService.sendBookingConfirmation(student, saved.getId());
+        }
+        return saved;
+    }
+
+    /** Called once a booking has been paid for: PENDING becomes CONFIRMED. */
+    @Override
+    @Transactional
+    public Booking confirmBooking(Long bookingId) {
+        Booking booking = getBookingOrThrow(bookingId);
+
+        if (booking.getStatus() == BookingStatus.CONFIRMED) {
+            return booking;
+        }
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new IllegalStateException("Only a booking that is waiting for payment can be confirmed");
+        }
+
+        booking.createBooking(); // sets CONFIRMED
+        Booking saved = bookingRepository.save(booking);
+
+        notificationService.sendBookingConfirmation(saved.getStudent(), saved.getId());
         return saved;
     }
 

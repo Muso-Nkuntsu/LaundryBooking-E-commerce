@@ -20,10 +20,16 @@ public interface PaymentService {
             Long orderId,
             Long serviceId);
 
+    /** Records a CARD or EFT payment for a booking or an order. See PaymentServiceImpl for the rules. */
+    Payment recordPayment(Double amount, String paymentMethod, String transactionRef,
+                          Long bookingId, Long orderId, Long serviceId,
+                          String payerName, String payerBank);
+
     Payment markAsCompleted(Long paymentId);
     Payment markAsFailed(Long paymentId);
     Optional<Payment> getPaymentById(Long paymentId);
     List<Payment> getPaymentsByBookingId(Long bookingId);
+    List<Payment> getPaymentsByOrderId(Long orderId);
     List<Payment> getPaymentsByStatus(String status);
     List<Payment> getAllPayments();
 }

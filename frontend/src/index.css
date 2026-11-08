@@ -274,6 +274,7 @@ div.machine { cursor: default; }
 
 /* ---------- Bookings / tables / misc ---------- */
 .booking { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; }
+.booking-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
 .datechip { width: 68px; padding: 9px 0; border-radius: var(--r-md); background: var(--tide-wash); color: var(--tide-deep); text-align: center; font-weight: 700; line-height: 1.15; }
 .datechip b { display: block; font-family: var(--font-display); font-size: 1.5rem; }
 .segmented { display: inline-flex; padding: 4px; background: var(--rinse); border-radius: 999px; gap: 2px; flex-wrap: wrap; }

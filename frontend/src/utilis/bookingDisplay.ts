@@ -3,7 +3,7 @@ import { formatFullDate, formatTimeRange } from "./FormatDate";
 
 export const STATUS_LABEL: Record<BookingStatus, string> = {
   CONFIRMED: "Confirmed",
-  PENDING: "Pending",
+  PENDING: "Awaiting payment",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
 };
