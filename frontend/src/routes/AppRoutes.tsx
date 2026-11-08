@@ -20,6 +20,7 @@ import Products from "../pages/products/Products";
 import ProductDetails from "../pages/products/ProductDetails";
 
 import MakeBooking from "../pages/booking/MakeBooking";
+import BookingSummary from "../pages/booking/BookingSummary";
 import BookingConfirmation from "../pages/booking/BookingConfirmation";
 import MyBookings from "../pages/booking/MyBookings";
 
@@ -60,6 +61,7 @@ const AppRoutes: React.FC = () => {
           {/* Booking */}
           <Route path="/make-booking" element={withNav(<MakeBooking />)} />
           <Route path="/bookings/create" element={withNav(<MakeBooking />)} />
+          <Route path="/booking-summary" element={withNav(<BookingSummary />)} />
           <Route path="/booking-confirmation" element={withNav(<BookingConfirmation />)} />
           <Route path="/my-bookings" element={withNav(<MyBookings />)} />
 

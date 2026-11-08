@@ -4,6 +4,8 @@ import { Link, useLocation } from "react-router-dom";
 import TextField from "../../components/common/TextField";
 import Icon from "../../components/common/Icon";
 import { createBookingPayment } from "../../services/paymentService";
+import type { Booking } from "../../types/booking";
+import { useNavigate } from "react-router-dom";
 import { friendlyError } from "../../utilis/errorMessage";
 import { formatCurrency } from "../../utilis/FormatCurrency";
 
@@ -20,7 +22,13 @@ function formatExpiry(raw: string): string {
 
 function Payment() {
   const location = useLocation();
-  const state = (location.state ?? {}) as { amount?: number; description?: string; bookingId?: number };
+  const navigate = useNavigate();
+  const state = (location.state ?? {}) as {
+  amount?: number;
+  description?: string;
+  bookingId?: number;
+  booking?: Booking;
+  };
   const amount = typeof state.amount === "number" ? state.amount : 0;
 
   const [method, setMethod] = useState<Method>("card");
@@ -47,10 +55,16 @@ function Payment() {
 
     // No payment gateway is connected, so nothing is charged and card details are not sent.
     // For a booking with an amount, the payment is recorded on the backend as PENDING.
+
+    let payment = null;
     if (state.bookingId && amount > 0) {
       try {
         setSubmitting(true);
-        await createBookingPayment(state.bookingId, amount, method === "card" ? "CARD" : "EFT");
+        payment = await createBookingPayment(
+        state.bookingId,
+        amount,
+        method === "card" ? "CARD" : "EFT"
+        );
       } catch (error) {
         setServerError(friendlyError(error, "We couldn't record your payment. Try again."));
         return;
@@ -59,7 +73,17 @@ function Payment() {
       }
     }
 
-    setPaid(true);
+
+    if (state.bookingId && state.booking) {
+    navigate("/booking-confirmation", {
+    state: {
+    booking: state.booking,
+    payment,
+    },
+    });
+  } else {
+  setPaid(true);
+  }
   };
 
   if (paid) {
