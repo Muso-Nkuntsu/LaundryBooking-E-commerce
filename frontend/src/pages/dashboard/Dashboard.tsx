@@ -44,8 +44,8 @@ function Dashboard() {
             <p>{error ? "We couldn't load your bookings right now." : "You have no wash booked yet."}</p>
           )}
           <div className="btn-row" style={{ marginTop: 20 }}>
-            <Link to="/make-booking" className="btn btn-sun">
-              Book a machine
+            <Link to="/laundry" className="btn btn-sun">
+            Make Booking
             </Link>
             {upcoming.length > 0 && (
               <Link to="/my-bookings" className="btn btn-ghost" style={{ color: "#fff", borderColor: "rgba(255,255,255,0.4)" }}>

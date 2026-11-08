@@ -1,5 +1,7 @@
+
 import { Link, useLocation } from "react-router-dom";
 import type { Booking } from "../../types/booking";
+import type { PaymentRecord } from "../../services/paymentService";
 import { EmptyState } from "../../components/common/States";
 import Icon from "../../components/common/Icon";
 import { formatCurrency } from "../../utilis/FormatCurrency";
@@ -7,16 +9,25 @@ import { STATUS_LABEL, STATUS_PILL, bookingDate, bookingTime } from "../../utili
 
 function BookingConfirmation() {
   const location = useLocation();
-  const booking = (location.state as { booking?: Booking } | null)?.booking;
+  const state = (location.state ?? {}) as {
+    booking?: Booking;
+    payment?: PaymentRecord | null;
+  };
 
-  // Prevent direct access without a booking
+  const booking = state.booking;
+  const payment = state.payment;
+
   if (!booking) {
     return (
       <div className="page narrow">
         <EmptyState
           title="No booking to show"
-          message="This page appears right after you book. Start a new booking to see it."
-          action={<Link to="/make-booking" className="btn btn-primary">Book a machine</Link>}
+          message="Start a new booking to see your booking details."
+          action={
+            <Link to="/laundry" className="btn btn-primary">
+              Browse Services
+            </Link>
+          }
         />
       </div>
     );
@@ -52,14 +63,25 @@ function BookingConfirmation() {
         <dl className="dl">
           <dt>Booking number</dt>
           <dd>#{booking.id}</dd>
+
           <dt>Laundry room</dt>
           <dd>{room ? `${room.roomNumber}, ${room.location}` : "Not set"}</dd>
+
           <dt>Machine</dt>
           <dd>{machine ? `${machine.machineNumber} (${machine.type})` : "Not set"}</dd>
-          <dt>Status</dt>
-          <dd><span className={STATUS_PILL[booking.status] ?? "pill pill-off"} style={{ marginLeft: "auto" }}>{STATUS_LABEL[booking.status] ?? booking.status}</span></dd>
+
+          <dt>Booking status</dt>
+          <dd>
+            <span className={STATUS_PILL[booking.status] ?? "pill pill-off"}>
+              {STATUS_LABEL[booking.status] ?? booking.status}
+            </span>
+          </dd>
+
+          <dt>Payment status</dt>
+          <dd>{payment?.status ?? "Not submitted"}</dd>
+
           <dt>Total</dt>
-          <dd>{formatCurrency(booking.totalAmount ?? 0)}</dd>
+          <dd><strong>{formatCurrency(booking.totalAmount ?? 0)}</strong></dd>
         </dl>
       </section>
 

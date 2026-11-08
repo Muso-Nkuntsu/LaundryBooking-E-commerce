@@ -29,6 +29,23 @@ function MakeBooking() {
 
   const { laundryServiceId, laundryServiceName, laundryServicePrice } = (location.state as MakeBookingLocationState | null) ?? {};
   const roomFilter = Number(searchParams.get("roomId")) || null;
+  if (!laundryServiceId || !laundryServiceName) {
+  return (
+    <div className="page narrow">
+      <section className="card state">
+        <h1>Select a laundry service first</h1>
+        <p>Please visit our Services page and choose a laundry service before making a booking.</p>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => navigate("/laundry")}
+        >
+          Browse Services
+        </button>
+      </section>
+    </div>
+  );
+}
 
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [selectedMachine, setSelectedMachine] = useState<LaundryMachine | null>(null);
@@ -72,7 +89,13 @@ function MakeBooking() {
         timeSlotId: selectedSlot.id,
         serviceId: laundryServiceId,
       });
-      navigate("/booking-confirmation", { state: { booking } });
+      navigate("/booking-summary", {
+      state: {
+      booking,
+      laundryServiceName,
+      laundryServicePrice,
+      },
+      });
     } catch (error) {
       toast.error(friendlyError(error, "We couldn't create your booking. Try again."));
       // Someone may have taken the machine in the meantime, so refresh what is free.
