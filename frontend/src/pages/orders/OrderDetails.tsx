@@ -28,7 +28,7 @@ function OrderDetails() {
                     order,
                     items: allItems.filter(
                         (item) =>
-                            String(item.order?.orderId) === orderId || String(item.order?.id) === orderId
+                            String(item.order?.orderId) === orderId
                     ),
                 }))
                 .catch((err: unknown) => {

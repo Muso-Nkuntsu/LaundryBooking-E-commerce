@@ -2,12 +2,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Product } from "../../types/Product";
 import { EmptyState, ErrorState, SkeletonGrid } from "../../components/common/States";
-import Icon from "../../components/common/Icon";
 import { useFetch } from "../../hooks/useFetch";
 import { useToast } from "../../context/useToast";
 import { useCart } from "../../context/useCart";
 import { getAllProducts } from "../../services/productService";
-import { assetUrl } from "../../services/Api";
+import ProductImage from "../../components/common/ProductImage";
 import { friendlyError } from "../../utilis/errorMessage";
 import { formatCurrency } from "../../utilis/FormatCurrency";
 
@@ -72,11 +71,7 @@ function Products() {
           const inCart = cart.quantityOf(product.productId);
           return (
             <article className="card tile hoverable" key={product.productId}>
-              {product.imageUrl ? (
-                <img className="product-art" src={assetUrl(product.imageUrl)} alt="" style={{ width: "100%", objectFit: "cover" }} />
-              ) : (
-                <div className="product-art" aria-hidden="true"><Icon name="bag" size={44} /></div>
-              )}
+              <ProductImage name={product.name} imageUrl={product.imageUrl} />
               <span className="muted small">{product.category || "Laundry"}</span>
               <h2>{product.name}</h2>
               <p className="muted">{product.description || "Laundry product for student use."}</p>
