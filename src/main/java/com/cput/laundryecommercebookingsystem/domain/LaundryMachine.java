@@ -77,6 +77,19 @@ public class LaundryMachine {
     }
 
 
+    /** Used by the admin dashboard to rename a machine, change its type or move it to another room. */
+    public void updateDetails(String machineNumber, String type, LaundryRoom laundryRoom) {
+        if (machineNumber == null || machineNumber.isBlank()) {
+            throw new IllegalArgumentException("Machine number is required");
+        }
+        if (laundryRoom == null) {
+            throw new IllegalArgumentException("Laundry room is required");
+        }
+        this.machineNumber = machineNumber.trim();
+        this.type = type;
+        this.laundryRoom = laundryRoom;
+    }
+
     public void updateStatus(MachineStatus status) {
         if (status == null) {
             throw new IllegalArgumentException(

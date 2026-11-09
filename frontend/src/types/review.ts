@@ -1,13 +1,12 @@
 export interface Review {
-  id: string;
-  userId: string;
+  id: number;
+  userId: number;
   userName: string;
-  userAvatarUrl?: string;
   rating: number;
   comment: string;
   createdAt: string;
-  updatedAt?: string;
-  orderId?: string;
+  serviceId?: number;
+  serviceName?: string;
 }
 
 export interface ReviewSummary {
@@ -17,12 +16,8 @@ export interface ReviewSummary {
 }
 
 export interface CreateReviewPayload {
+  studentId: number;
+  serviceId: number;
   rating: number;
   comment: string;
-  orderId?: string;
-}
-
-export interface UpdateReviewPayload {
-  rating?: number;
-  comment?: string;
 }

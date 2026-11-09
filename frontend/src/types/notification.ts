@@ -1,24 +1,15 @@
-export type NotificationType = 
+// The four kinds of notification the backend sends.
+export type NotificationType =
   | 'BOOKING_CONFIRMATION'
-  | 'BOOKING_REMINDER'
-  | 'BOOKING_CANCELLATION'
-  | 'ORDER_UPDATE'
-  | 'PAYMENT_STATUS'
-  | 'SYSTEM_ALERT';
+  | 'BOOKING_CANCELLED'
+  | 'ORDER_COMPLETE'
+  | 'PAYMENT_CONFIRMATION';
 
 export interface NotificationItem {
-  id: string;
+  id: number;
   type: NotificationType;
   title: string;
   message: string;
   isRead: boolean;
   createdAt: string;
-  actionUrl?: string;
-}
-
-export interface NotificationState {
-  notifications: NotificationItem[];
-  unreadCount: number;
-  isLoading: boolean;
-  error: string | null;
 }

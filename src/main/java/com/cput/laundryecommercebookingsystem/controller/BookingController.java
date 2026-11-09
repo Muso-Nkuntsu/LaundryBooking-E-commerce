@@ -7,12 +7,15 @@ package com.cput.laundryecommercebookingsystem.controller;
 import com.cput.laundryecommercebookingsystem.domain.*;
 import com.cput.laundryecommercebookingsystem.domain.enums.BookingStatus;
 import com.cput.laundryecommercebookingsystem.repository.*;
+import com.cput.laundryecommercebookingsystem.security.CurrentStudent;
 import com.cput.laundryecommercebookingsystem.service.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 
 @RestController
@@ -32,35 +35,54 @@ public class BookingController {
         private final ILaundryMachineRepository laundryMachineRepository;
         private final TimeSlotRepository timeSlotRepository;
         private final ILaundryServiceRepository laundryServiceRepository;
+        private final CurrentStudent currentStudent;
 
         public BookingController(IBookingService bookingService,
                                  IStudentRepository studentRepository,
                                  ILaundryMachineRepository laundryMachineRepository,
                                  TimeSlotRepository timeSlotRepository,
-                                 ILaundryServiceRepository laundryServiceRepository) {
+                                 ILaundryServiceRepository laundryServiceRepository,
+                                 CurrentStudent currentStudent) {
             this.bookingService = bookingService;
             this.studentRepository = studentRepository;
             this.laundryMachineRepository = laundryMachineRepository;
             this.timeSlotRepository = timeSlotRepository;
             this.laundryServiceRepository = laundryServiceRepository;
+            this.currentStudent = currentStudent;
         }
 
         // ---------- CREATE ----------
 
+        /**
+         * Example: POST /api/bookings?studentId=1&machineId=2&timeSlotId=3&serviceId=4
+         * The total is worked out here from the chosen service, never taken from the request,
+         * so it cannot be changed in the browser.
+         */
         @PostMapping
-        public ResponseEntity<Booking> createBooking(@RequestParam Long studentId,
+        @Transactional // keeps the machine row locked until the booking is saved
+        public ResponseEntity<Booking> createBooking(@RequestParam(required = false) Long studentId,
                                                      @RequestParam Long machineId,
                                                      @RequestParam Long timeSlotId,
-                                                     @RequestParam(required = false) Long serviceId,
-                                                     @RequestParam double totalAmount) {
-            Student student = studentRepository.findById(studentId)
-                    .orElseThrow(() -> notFound("Student", studentId));
+                                                     @RequestParam (required = false) Long serviceId) {
+            // A student always books for themselves; only an admin may book for someone else.
+            Long ownerId = currentStudent.resolveStudentId(studentId);
+            Student student = studentRepository.findById(ownerId)
+                    .orElseThrow(() -> notFound("Student", ownerId));
 
-            LaundryMachine machine = laundryMachineRepository.findById(machineId)
+            // Locked: a second booking for this machine waits here until the first is saved,
+            // then the double-booking check in BookingServiceImpl sees it.
+            LaundryMachine machine = laundryMachineRepository.findByIdForUpdate(machineId)
                     .orElseThrow(() -> notFound("LaundryMachine", machineId));
 
             TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
                     .orElseThrow(() -> notFound("TimeSlot", timeSlotId));
+            if (!timeSlot.isAvailable()) {
+                throw new IllegalStateException("This time slot has been closed. Please choose another one.");
+            }
+            if (timeSlot.getDate() != null && timeSlot.getStartTime() != null
+                    && LocalDateTime.of(timeSlot.getDate(), timeSlot.getStartTime()).isBefore(LocalDateTime.now())) {
+                throw new IllegalArgumentException("This time slot has already started. Please choose a later one.");
+            }
 
             LaundryService laundryService = null;
             if (serviceId != null) {
@@ -68,19 +90,17 @@ public class BookingController {
                         .orElseThrow(() -> notFound("LaundryService", serviceId));
             }
 
-            try {
-                Booking booking = bookingService.createBooking(
-                        student, machine, timeSlot, laundryService, totalAmount);
-                return ResponseEntity.status(HttpStatus.CREATED).body(booking);
-            } catch (IllegalStateException e) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
-            } catch (IllegalArgumentException e) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-            }
+            double totalAmount = laundryService != null ? laundryService.getPrice() : 0.0;
+
+            // A double booking gives 409 and invalid values give 400 (see GlobalExceptionHandler).
+            Booking booking = bookingService.createBooking(
+                    student, machine, timeSlot, laundryService, totalAmount);
+            return ResponseEntity.status(HttpStatus.CREATED).body(booking);
         }
 
         // ---------- READ ----------
 
+        /** Admin only (SecurityConfig). */
         @GetMapping
         public ResponseEntity<List<Booking>> getAllBookings() {
             return ResponseEntity.ok(bookingService.findAll());
@@ -90,11 +110,13 @@ public class BookingController {
         public ResponseEntity<Booking> getBookingById(@PathVariable Long id) {
             Booking booking = bookingService.findById(id)
                     .orElseThrow(() -> notFound("Booking", id));
+            currentStudent.checkOwner(booking.getStudent());
             return ResponseEntity.ok(booking);
         }
 
         @GetMapping("/student/{studentId}")
         public ResponseEntity<List<Booking>> getBookingsByStudent(@PathVariable Long studentId) {
+            currentStudent.checkOwner(studentId);
             Student student = studentRepository.findById(studentId)
                     .orElseThrow(() -> notFound("Student", studentId));
             return ResponseEntity.ok(bookingService.findByStudent(student));
@@ -102,44 +124,34 @@ public class BookingController {
 
         // ---------- UPDATE ----------
 
+        /** Admin only (SecurityConfig). */
         @PutMapping("/{id}/status")
         public ResponseEntity<Booking> updateStatus(@PathVariable Long id,
-                                                    @RequestParam BookingStatus status) {
-            try {
-                Booking booking = bookingService.updateStatus(id, status);
-                return ResponseEntity.ok(booking);
-            } catch (IllegalArgumentException e) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-            }
+                                                    @RequestBody BookingStatus status) {
+            return ResponseEntity.ok(bookingService.updateStatus(id, status));
         }
 
         @PutMapping("/{id}/cancel")
         public ResponseEntity<Booking> cancelBooking(@PathVariable Long id) {
-            try {
-                Booking booking = bookingService.cancelBooking(id);
-                return ResponseEntity.ok(booking);
-            } catch (IllegalArgumentException e) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-            }
+            Booking booking = bookingService.findById(id)
+                    .orElseThrow(() -> notFound("Booking", id));
+            currentStudent.checkOwner(booking.getStudent());
+            return ResponseEntity.ok(bookingService.cancelBooking(id));
         }
 
         // ---------- DELETE ----------
 
+        /** Admin only (SecurityConfig). */
         @DeleteMapping("/{id}")
         public ResponseEntity<Void> deleteBooking(@PathVariable Long id) {
-            try {
-                bookingService.deleteBooking(id);
-                return ResponseEntity.noContent().build();
-            } catch (IllegalArgumentException e) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-            }
+            bookingService.deleteBooking(id);
+            return ResponseEntity.noContent().build();
         }
 
         // ---------- Helpers ----------
 
-        private ResponseStatusException notFound(String entityName, Long id) {
-            return new ResponseStatusException(
-                    HttpStatus.NOT_FOUND, entityName + " not found with id: " + id);
+        private NoSuchElementException notFound(String entityName, Long id) {
+            return new NoSuchElementException(entityName + " not found with id: " + id);
         }
     }
 

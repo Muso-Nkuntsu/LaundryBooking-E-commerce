@@ -1,34 +1,35 @@
 package com.cput.laundryecommercebookingsystem.controller.admin;
 
-import com.cput.laundryecommercebookingsystem.controller.dto.admin.AdminDtos.*;
-import com.cput.laundryecommercebookingsystem.service.admin.AdminService;
+import com.cput.laundryecommercebookingsystem.dto.admin.AdminDtos.DashboardView;
+import com.cput.laundryecommercebookingsystem.dto.admin.AdminDtos.ReportView;
+import com.cput.laundryecommercebookingsystem.service.admin.AdminReportService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * Talent Nocuze
- * 230405886
+/*AdminDashboardController.java
+ * Admin only: protected twice, by the /api/admin/** rule in SecurityConfig and by @PreAuthorize here.
  */
 @RestController
 @RequestMapping("/api/admin")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminDashboardController {
 
-    private final AdminService adminService;
+    private final AdminReportService reportService;
 
-    public AdminDashboardController(AdminService adminService) {
-        this.adminService = adminService;
+    public AdminDashboardController(AdminReportService reportService) {
+        this.reportService = reportService;
     }
 
-    @GetMapping("/overview")
-    public Overview overview() {
-        return adminService.overview();
+    /** The numbers and recent activity on the admin home page. */
+    @GetMapping("/dashboard")
+    public ResponseEntity<DashboardView> dashboard() {
+        return ResponseEntity.ok(reportService.dashboard());
     }
 
+    /** Booking, order, payment and stock statistics for the last N days (default 30). */
     @GetMapping("/reports")
-    public Reports reports() {
-        return adminService.reports();
+    public ResponseEntity<ReportView> reports(@RequestParam(defaultValue = "30") int days) {
+        return ResponseEntity.ok(reportService.report(days));
     }
 }

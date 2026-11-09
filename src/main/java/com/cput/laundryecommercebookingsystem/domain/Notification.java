@@ -8,6 +8,7 @@
 package com.cput.laundryecommercebookingsystem.domain;
 
 import com.cput.laundryecommercebookingsystem.domain.enums.NotificationType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -28,7 +29,7 @@ public class Notification {
     private Long id;
 
     // FK: studentId
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
@@ -85,6 +86,7 @@ public class Notification {
         return id;
     }
 
+    @JsonIgnore // the caller already knows which student they asked for
     public Student getStudent() {
         return student;
     }

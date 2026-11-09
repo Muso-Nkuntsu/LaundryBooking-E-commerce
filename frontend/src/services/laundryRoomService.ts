@@ -1,17 +1,16 @@
+import { apiGet } from "./Api";
 import type { LaundryRoom } from "../types/LaundryRoom";
 
-const API_URL = "http://localhost:8080/laundry-room";
+// The backend sends the flag as "active"; the app uses "isActive".
+type RawRoom = Omit<LaundryRoom, "isActive"> & { active?: boolean; isActive?: boolean };
 
-async function request<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status})`);
-  }
-  return response.json();
-}
+const toRoom = (raw: RawRoom): LaundryRoom => ({
+  ...raw,
+  isActive: raw.isActive ?? raw.active ?? false,
+});
 
-export const getActiveLaundryRooms = (): Promise<LaundryRoom[]> =>
-  request<LaundryRoom[]>(`${API_URL}/active`);
+export const getActiveLaundryRooms = async (): Promise<LaundryRoom[]> =>
+  (await apiGet<RawRoom[]>("/laundry-room/active")).map(toRoom);
 
-export const getLaundryRoomById = (roomId: number): Promise<LaundryRoom> =>
-  request<LaundryRoom>(`${API_URL}/${roomId}`);
+export const getLaundryRoomById = async (roomId: number): Promise<LaundryRoom> =>
+  toRoom(await apiGet<RawRoom>(`/laundry-room/${roomId}`));

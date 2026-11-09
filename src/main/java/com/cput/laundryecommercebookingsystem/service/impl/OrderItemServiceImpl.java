@@ -67,6 +67,18 @@ public class OrderItemServiceImpl implements IOrderItemService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<OrderItem> getOrderItemsByOrderId(Long orderId) {
+        return IOrderItemRepository.findByOrderId(orderId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderItem> getOrderItemsByStudentId(Long studentId) {
+        return IOrderItemRepository.findByStudentId(studentId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<OrderItem> getAllOrderItems() {
         return IOrderItemRepository.findAll();
     }

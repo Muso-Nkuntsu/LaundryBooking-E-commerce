@@ -1,4 +1,4 @@
-﻿package com.cput.laundryecommercebookingsystem.factory;
+package com.cput.laundryecommercebookingsystem.factory;
 
 
 import com.cput.laundryecommercebookingsystem.factory.ProductFactory;

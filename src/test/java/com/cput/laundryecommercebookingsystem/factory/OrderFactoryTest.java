@@ -2,7 +2,7 @@ package com.cput.laundryecommercebookingsystem.factory;
 
 import com.cput.laundryecommercebookingsystem.domain.Order;
 import com.cput.laundryecommercebookingsystem.domain.OrderItem;
-import com.cput.laundryecommercebookingsystem.domain.OrderStatus;
+import com.cput.laundryecommercebookingsystem.domain.enums.OrderStatus;
 import com.cput.laundryecommercebookingsystem.domain.Student;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

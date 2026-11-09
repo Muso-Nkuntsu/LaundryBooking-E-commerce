@@ -1,218 +1,343 @@
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import { ErrorState, Loading } from "../../components/common/States";
+import { useToast } from "../../context/useToast";
+import { useFetch } from "../../hooks/useFetch";
+import { ORDER_NEXT, adminApi } from "../../services/adminApi";
+import type { AdminPayment, OrderStatus } from "../../services/adminApi";
+import { friendlyError } from "../../utilis/errorMessage";
+import { ACTION_LABEL, Modal, PageHead, Segmented, Status, dateTime, money, statusLabel } from "./adminUi";
 
-import { getApiErrorMessage } from "../../services/Api";
-import { adminService } from "../../services/adminService";
-import { Badge, LoadState, Notice, StatCard, fmtDateTime, money, useLoad } from "../../components/admin/ui";
-import type { AdminOrderDetail, AdminPayment, OrderStatus } from "../../types/admin";
+type Tab = "orders" | "payments";
 
-const ORDER_STATUSES: OrderStatus[] = ["PENDING", "PAID", "IN_PROGRESS", "COMPLETED", "CANCELLED"];
-const loadOrders = () => adminService.getOrders();
-const loadPayments = () => adminService.getPayments();
-
+// Shop orders and every payment, including checking EFTs against the bank statement.
 function AdminOrders() {
-    const [tab, setTab] = useState<"orders" | "payments">("orders");
-    const orders = useLoad(loadOrders);
-    const payments = useLoad(loadPayments);
-    const [filter, setFilter] = useState<"ALL" | OrderStatus>("ALL");
-    const [payFilter, setPayFilter] = useState("ALL");
-    const [detail, setDetail] = useState<AdminOrderDetail | null>(null);
-    const [msg, setMsg] = useState<{ kind: "err" | "okk"; text: string } | null>(null);
-    const [busy, setBusy] = useState(false);
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState<Tab>(params.get("tab") === "payments" ? "payments" : "orders");
 
-    const shownOrders = useMemo(
-        () => (orders.data ?? []).filter((o) => filter === "ALL" || o.status === filter),
-        [orders.data, filter]
-    );
-    const shownPayments = useMemo(
-        () => (payments.data ?? []).filter((p) => payFilter === "ALL" || p.status === payFilter),
-        [payments.data, payFilter]
-    );
+  return (
+    <>
+      <PageHead title="Orders & payments" intro="Approve an EFT only once the money shows in the bank account." />
+      <div className="adm-tabs">
+        <Segmented label="Section" value={tab} onChange={setTab} options={[
+          { value: "orders", label: "Shop orders" },
+          { value: "payments", label: "Payments" },
+        ]} />
+      </div>
+      {tab === "orders" ? <Orders initialStatus={params.get("status") ?? ""} /> : <Payments />}
+    </>
+  );
+}
 
-    const completed = (orders.data ?? []).filter((o) => o.status === "COMPLETED").length;
-    const outstanding = (orders.data ?? []).filter((o) => o.status !== "COMPLETED" && o.status !== "CANCELLED").length;
-    const unpaidValue = (orders.data ?? [])
-        .filter((o) => o.paymentStatus !== "Completed" && o.status !== "CANCELLED")
-        .reduce((sum, o) => sum + o.totalAmount, 0);
+// =====================================================================
+// Orders
+// =====================================================================
 
-    const refreshAll = useCallback(async () => {
-        await Promise.all([orders.reload(), payments.reload()]);
-    }, [orders, payments]);
+function Orders({ initialStatus }: { initialStatus: string }) {
+  const [status, setStatus] = useState(initialStatus);
+  const [search, setSearch] = useState("");
+  const [q, setQ] = useState("");
+  const [selected, setSelected] = useState<number | null>(null);
+  const { data, loading, error, reload } = useFetch(() => adminApi.orders({ status, q }), `${status}|${q}`);
+  const orders = data ?? [];
 
-    const openOrder = async (id: number) => {
-        setMsg(null);
-        try {
-            setDetail(await adminService.getOrder(id));
-        } catch (err) {
-            setMsg({ kind: "err", text: getApiErrorMessage(err) });
-        }
-    };
+  return (
+    <>
+      <form className="adm-tools" onSubmit={(e) => { e.preventDefault(); setQ(search.trim()); }}>
+        <input className="input grow" type="search" placeholder="Search student, email or #order" value={search}
+               onChange={(e) => setSearch(e.target.value)} aria-label="Search orders" />
+        <button type="submit" className="btn btn-primary btn-sm">Search</button>
+      </form>
+      <div className="adm-tools">
+        <Segmented label="Status" value={status} onChange={setStatus} options={[
+          { value: "", label: "All" },
+          { value: "PENDING", label: "Awaiting payment" },
+          { value: "OUTSTANDING", label: "To prepare" },
+          { value: "COMPLETED", label: "Completed" },
+          { value: "CANCELLED", label: "Cancelled" },
+        ]} />
+      </div>
 
-    const run = async (action: () => Promise<unknown>, success: string, orderToReopen?: number) => {
-        setBusy(true);
-        setMsg(null);
-        try {
-            await action();
-            setMsg({ kind: "okk", text: success });
-            await refreshAll();
-            if (orderToReopen !== undefined) setDetail(await adminService.getOrder(orderToReopen));
-        } catch (err) {
-            setMsg({ kind: "err", text: getApiErrorMessage(err) });
-        } finally {
-            setBusy(false);
-        }
-    };
+      {error ? <ErrorState message={error} onRetry={reload} /> : loading && !data ? <Loading /> : (
+        <section className="card">
+          <p className="adm-count">{orders.length} {orders.length === 1 ? "order" : "orders"}</p>
+          <div className="table-wrap">
+            <table className="table" style={{ minWidth: 720 }}>
+              <thead><tr><th>#</th><th>Student</th><th>Placed</th><th className="num">Items</th><th className="num">Total</th><th>Payment</th><th>Status</th></tr></thead>
+              <tbody>
+                {orders.map((o) => (
+                  <tr key={o.orderId} className="clickable" onClick={() => setSelected(o.orderId)}>
+                    <td>
+                      <button type="button" className="link-btn" onClick={(e) => { e.stopPropagation(); setSelected(o.orderId); }}>#{o.orderId}</button>
+                    </td>
+                    <td>{o.studentName}<span className="sub">{o.studentEmail}</span></td>
+                    <td>{dateTime(o.orderDate)}</td>
+                    <td className="num">{o.itemCount}</td>
+                    <td className="num">{money(o.totalAmount)}</td>
+                    <td><Status kind="orderpay" value={o.paymentStatus} /></td>
+                    <td><Status kind="order" value={o.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {orders.length === 0 && <p className="adm-empty">No orders match.</p>}
+          </div>
+        </section>
+      )}
 
-    const verify = (p: AdminPayment) => {
-        const label = p.paymentMethod === "EFT" ? "Confirm you have received this EFT" : "Confirm this payment";
-        if (!window.confirm(`${label} (${p.transactionRef}, ${money(p.amount)})?`)) return;
-        void run(() => adminService.verifyPayment(p.paymentId), `Payment ${p.transactionRef} verified.`, detail?.order.orderId);
-    };
+      {selected !== null && <OrderDetails id={selected} onClose={() => setSelected(null)} onChanged={reload} />}
+    </>
+  );
+}
 
-    const reject = (p: AdminPayment) => {
-        if (!window.confirm(`Reject payment ${p.transactionRef}?`)) return;
-        void run(() => adminService.rejectPayment(p.paymentId), `Payment ${p.transactionRef} rejected.`, detail?.order.orderId);
-    };
+function OrderDetails({ id, onClose, onChanged }: { id: number; onClose: () => void; onChanged: () => void }) {
+  const toast = useToast();
+  const { data, loading, error, reload, setData } = useFetch(() => adminApi.order(id), id);
+  const [busy, setBusy] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [verifying, setVerifying] = useState<{ payment: AdminPayment; approved: boolean } | null>(null);
 
-    const paymentActions = (p: AdminPayment) =>
-        p.status === "Pending" ? (
-            <div className="adm-row">
-                <button className="primary" disabled={busy} onClick={() => verify(p)}>
-                    {p.paymentMethod === "EFT" ? "Verify EFT" : "Verify"}
-                </button>
-                <button className="danger" disabled={busy} onClick={() => reject(p)}>Reject</button>
+  const change = async (status: OrderStatus) => {
+    setBusy(true);
+    try {
+      const updated = await adminApi.setOrderStatus(id, status);
+      setData(() => updated);
+      toast.success(`Order #${id}: ${statusLabel("order", status)}.`);
+      onChanged();
+    } catch (err) {
+      toast.error(friendlyError(err, "The status couldn't be changed."));
+    } finally {
+      setBusy(false);
+      setCancelling(false);
+    }
+  };
+
+  const verify = async (payment: AdminPayment, approved: boolean) => {
+    setBusy(true);
+    try {
+      await adminApi.verifyPayment(payment.paymentId, approved);
+      toast.success(approved ? "Payment approved. The order is now paid." : "Payment rejected.");
+      reload();
+      onChanged();
+    } catch (err) {
+      toast.error(friendlyError(err, "The payment couldn't be updated."));
+    } finally {
+      setBusy(false);
+      setVerifying(null);
+    }
+  };
+
+  const order = data?.order;
+
+  return (
+    <Modal title={`Order #${id}`} onClose={onClose}>
+      {loading && !data ? <Loading /> : error || !data || !order ? <ErrorState message={error ?? "Not found"} onRetry={reload} /> : (
+        <>
+          <div className="btn-row"><Status kind="order" value={order.status} /><Status kind="orderpay" value={order.paymentStatus} /></div>
+          <dl className="adm-facts">
+            <div><dt>Student</dt><dd>{order.studentName}</dd></div>
+            <div><dt>Email</dt><dd>{order.studentEmail}</dd></div>
+            <div><dt>Phone</dt><dd>{data.studentPhone || "—"}</dd></div>
+            <div><dt>Placed</dt><dd>{dateTime(order.orderDate)}</dd></div>
+          </dl>
+
+          <div className="adm-section">
+            <h3>Items</h3>
+            <div className="table-wrap">
+              <table className="table" style={{ minWidth: 420 }}>
+                <thead><tr><th>Product</th><th className="num">Price</th><th className="num">Qty</th><th className="num">Total</th></tr></thead>
+                <tbody>
+                  {data.items.map((item) => (
+                    <tr key={item.orderItemId}>
+                      <td>{item.productName}</td>
+                      <td className="num">{money(item.unitPrice)}</td>
+                      <td className="num">{item.quantity}</td>
+                      <td className="num">{money(item.subtotal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot><tr><td colSpan={3}>Order total</td><td className="num">{money(order.totalAmount)}</td></tr></tfoot>
+              </table>
             </div>
-        ) : null;
+          </div>
 
-    return (
-        <div>
-            <div className="adm-grid">
-                <StatCard label="Completed orders" value={completed} tone="ok" />
-                <StatCard label="Outstanding orders" value={outstanding} tone={outstanding ? "warn" : undefined} />
-                <StatCard label="Unpaid order value" value={money(unpaidValue)} />
-                <StatCard label="Pending payments" value={(payments.data ?? []).filter((p) => p.status === "Pending").length} tone="warn" />
-            </div>
+          <div className="adm-section">
+            <h3>Payments</h3>
+            {data.payments.length === 0 ? <p className="muted">The student hasn't paid yet.</p> : (
+              <ul className="list">
+                {data.payments.map((p) => (
+                  <li key={p.paymentId}>
+                    <span>
+                      {p.method} · {money(p.amount)} · {dateTime(p.paymentDate)}
+                      {p.transactionRef && <span className="sub muted small">Ref {p.transactionRef}{p.payerBank ? ` · ${p.payerBank}` : ""}</span>}
+                    </span>
+                    {p.status === "PENDING" ? (
+                      <span className="btn-row">
+                        <button type="button" className="btn btn-primary btn-sm" disabled={busy}
+                                onClick={() => setVerifying({ payment: p, approved: true })}>Approve</button>
+                        <button type="button" className="btn btn-danger btn-sm" disabled={busy}
+                                onClick={() => setVerifying({ payment: p, approved: false })}>Reject</button>
+                      </span>
+                    ) : <Status kind="payment" value={p.status} />}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-            <div className="adm-tabs">
-                <button className={tab === "orders" ? "on" : ""} onClick={() => setTab("orders")}>Orders</button>
-                <button className={tab === "payments" ? "on" : ""} onClick={() => setTab("payments")}>Payments</button>
-            </div>
-            {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
-
-            {tab === "orders" && (
-                <div className="adm-two">
-                    <section className="adm-card">
-                        <div className="adm-toolbar">
-                            <label htmlFor="o-filter" style={{ margin: 0 }}>Status</label>
-                            <select id="o-filter" value={filter} onChange={(e) => setFilter(e.target.value as "ALL" | OrderStatus)}>
-                                <option value="ALL">All</option>
-                                {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
-                            </select>
-                            <button onClick={refreshAll}>Refresh</button>
-                        </div>
-                        <LoadState loading={orders.loading} error={orders.error} onRetry={orders.reload} />
-                        <div className="adm-table-wrap">
-                            <table>
-                                <thead><tr><th>#</th><th>Customer</th><th>Date</th><th>Total</th><th>Status</th><th>Payment</th></tr></thead>
-                                <tbody>
-                                {shownOrders.map((o) => (
-                                    <tr key={o.orderId} className={`clickable ${detail?.order.orderId === o.orderId ? "sel" : ""}`} onClick={() => void openOrder(o.orderId)}>
-                                        <td>{o.orderId}</td>
-                                        <td>{o.student?.name ?? "-"}</td>
-                                        <td>{fmtDateTime(o.orderDate)}</td>
-                                        <td>{money(o.totalAmount)}</td>
-                                        <td><Badge text={o.status} /></td>
-                                        <td><Badge text={o.paymentStatus} /></td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <section className="adm-card">
-                        <h2>Order details</h2>
-                        {!detail && <p className="adm-muted">Select an order to see its items and payments.</p>}
-                        {detail && (
-                            <>
-                                <p>
-                                    <strong>Order #{detail.order.orderId}</strong> · {detail.order.student?.name} ({detail.order.student?.email})<br />
-                                    <span className="adm-muted">{fmtDateTime(detail.order.orderDate)} · {money(detail.order.totalAmount)}</span>
-                                </p>
-                                <div className="adm-row" style={{ marginBottom: 12 }}>
-                                    <label htmlFor="o-status" style={{ margin: 0 }}>Status</label>
-                                    <select
-                                        id="o-status"
-                                        value={detail.order.status}
-                                        disabled={busy}
-                                        onChange={(e) => void run(() => adminService.updateOrderStatus(detail.order.orderId, e.target.value as OrderStatus), "Order status updated.", detail.order.orderId)}
-                                    >
-                                        {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
-                                    </select>
-                                </div>
-
-                                <h3 style={{ fontSize: ".9rem" }}>Items</h3>
-                                {detail.items.length === 0 ? <p className="adm-muted">No items.</p> : (
-                                    <ul className="adm-list">
-                                        {detail.items.map((i) => (
-                                            <li key={i.orderItemId}><span>{i.productName ?? "Product"} × {i.quantity}</span><span>{money(i.subtotal)}</span></li>
-                                        ))}
-                                    </ul>
-                                )}
-
-                                <h3 style={{ fontSize: ".9rem", marginTop: 14 }}>Payments</h3>
-                                {detail.payments.length === 0 ? <p className="adm-muted">No payment has been made for this order.</p> : (
-                                    <ul className="adm-list">
-                                        {detail.payments.map((p) => (
-                                            <li key={p.paymentId} style={{ flexWrap: "wrap" }}>
-                                                <span>{p.transactionRef} · {p.paymentMethod} · {money(p.amount)}</span>
-                                                <span><Badge text={p.status} /></span>
-                                                {paymentActions(p)}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </>
-                        )}
-                    </section>
+          <div className="adm-section">
+            <h3>Change status</h3>
+            {ORDER_NEXT[order.status].length === 0 ? (
+              <p className="muted">This order is finished, so its status can't change any more.</p>
+            ) : (
+              <>
+                {order.status === "PENDING" && (
+                  <p className="muted small">"Mark as paid" is for cash paid at the office. For an EFT, approve the payment above instead.</p>
+                )}
+                <div className="btn-row">
+                  {ORDER_NEXT[order.status].map((next) => (
+                    <button key={next} type="button" disabled={busy}
+                            className={`btn btn-sm ${next === "CANCELLED" ? "btn-danger" : "btn-primary"}`}
+                            onClick={() => (next === "CANCELLED" ? setCancelling(true) : change(next))}>
+                      {ACTION_LABEL[next]}
+                    </button>
+                  ))}
                 </div>
+              </>
             )}
+          </div>
+        </>
+      )}
 
-            {tab === "payments" && (
-                <section className="adm-card">
-                    <div className="adm-toolbar">
-                        <label htmlFor="p-filter" style={{ margin: 0 }}>Status</label>
-                        <select id="p-filter" value={payFilter} onChange={(e) => setPayFilter(e.target.value)}>
-                            <option value="ALL">All</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Failed">Failed</option>
-                        </select>
-                        <button onClick={refreshAll}>Refresh</button>
-                    </div>
-                    <LoadState loading={payments.loading} error={payments.error} onRetry={payments.reload} />
-                    <div className="adm-table-wrap">
-                        <table>
-                            <thead><tr><th>Reference</th><th>Customer</th><th>For</th><th>Method</th><th>Amount</th><th>Date</th><th>Status</th><th></th></tr></thead>
-                            <tbody>
-                            {shownPayments.map((p) => (
-                                <tr key={p.paymentId}>
-                                    <td>{p.transactionRef}</td>
-                                    <td>{p.customer?.name ?? "-"}</td>
-                                    <td>{p.orderId ? `Order #${p.orderId}` : p.bookingId ? `Booking #${p.bookingId}` : "-"}</td>
-                                    <td>{p.paymentMethod}</td>
-                                    <td>{money(p.amount)}</td>
-                                    <td>{fmtDateTime(p.paymentDate)}</td>
-                                    <td><Badge text={p.status} /></td>
-                                    <td>{paymentActions(p)}</td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            )}
-        </div>
-    );
+      {cancelling && (
+        <ConfirmDialog title={`Cancel order #${id}?`} confirmLabel="Cancel order" cancelLabel="Keep it" busy={busy}
+                       message={`The items go back into stock.${order && order.status !== "PENDING" ? " This order was paid, so remember to refund the student." : ""}`}
+                       onCancel={() => setCancelling(false)} onConfirm={() => change("CANCELLED")} />
+      )}
+      {verifying && <VerifyDialog payment={verifying.payment} approved={verifying.approved} busy={busy}
+                                  onCancel={() => setVerifying(null)} onConfirm={() => verify(verifying.payment, verifying.approved)} />}
+    </Modal>
+  );
+}
+
+// =====================================================================
+// Payments
+// =====================================================================
+
+function Payments() {
+  const toast = useToast();
+  const [status, setStatus] = useState("PENDING");
+  const [method, setMethod] = useState("");
+  const [search, setSearch] = useState("");
+  const [q, setQ] = useState("");
+  const [verifying, setVerifying] = useState<{ payment: AdminPayment; approved: boolean } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const { data, loading, error, reload } = useFetch(() => adminApi.payments({ status, method, q }), `${status}|${method}|${q}`);
+  const payments = data ?? [];
+
+  const verify = async (payment: AdminPayment, approved: boolean) => {
+    setBusy(true);
+    try {
+      await adminApi.verifyPayment(payment.paymentId, approved);
+      toast.success(approved
+        ? `Payment approved. ${payment.paidFor} is now ${payment.bookingId ? "confirmed" : "paid"}.`
+        : "Payment rejected. The student can pay again.");
+      reload();
+    } catch (err) {
+      toast.error(friendlyError(err, "The payment couldn't be updated."));
+    } finally {
+      setBusy(false);
+      setVerifying(null);
+    }
+  };
+
+  return (
+    <>
+      <form className="adm-tools" onSubmit={(e) => { e.preventDefault(); setQ(search.trim()); }}>
+        <input className="input grow" type="search" placeholder="Search student, reference or payer" value={search}
+               onChange={(e) => setSearch(e.target.value)} aria-label="Search payments" />
+        <select className="input" value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Method">
+          <option value="">Card and EFT</option>
+          <option value="EFT">EFT only</option>
+          <option value="CARD">Card only</option>
+        </select>
+        <button type="submit" className="btn btn-primary btn-sm">Search</button>
+      </form>
+      <div className="adm-tools">
+        <Segmented label="Status" value={status} onChange={setStatus} options={[
+          { value: "PENDING", label: "To verify" },
+          { value: "COMPLETED", label: "Received" },
+          { value: "FAILED", label: "Rejected" },
+          { value: "", label: "All" },
+        ]} />
+      </div>
+
+      {error ? <ErrorState message={error} onRetry={reload} /> : loading && !data ? <Loading /> : (
+        <section className="card">
+          <p className="adm-count">
+            {payments.length} {payments.length === 1 ? "payment" : "payments"} · {money(payments.reduce((sum, p) => sum + p.amount, 0))}
+          </p>
+          <div className="table-wrap">
+            <table className="table" style={{ minWidth: 820 }}>
+              <thead>
+                <tr><th>Date</th><th>For</th><th>Student</th><th>EFT details</th><th className="num">Amount</th><th>Status</th><th /></tr>
+              </thead>
+              <tbody>
+                {payments.map((p) => (
+                  <tr key={p.paymentId}>
+                    <td>{dateTime(p.paymentDate)}<span className="sub">{p.method}</span></td>
+                    <td>{p.paidFor}</td>
+                    <td>{p.studentName || "—"}<span className="sub">{p.studentEmail}</span></td>
+                    <td>
+                      {p.method === "EFT" ? (
+                        <>
+                          Ref: <strong>{p.transactionRef || "—"}</strong>
+                          <span className="sub">{p.payerName || "—"} · {p.payerBank || "—"}</span>
+                        </>
+                      ) : <span className="muted">—</span>}
+                    </td>
+                    <td className="num">{money(p.amount)}</td>
+                    <td><Status kind="payment" value={p.status} /></td>
+                    <td>
+                      {p.status === "PENDING" && (
+                        <div className="actions-cell">
+                          <button type="button" className="btn btn-primary btn-sm" disabled={busy}
+                                  onClick={() => setVerifying({ payment: p, approved: true })}>Approve</button>
+                          <button type="button" className="btn btn-danger btn-sm" disabled={busy}
+                                  onClick={() => setVerifying({ payment: p, approved: false })}>Reject</button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {payments.length === 0 && <p className="adm-empty">{status === "PENDING" ? "No payments are waiting to be checked." : "No payments match."}</p>}
+          </div>
+        </section>
+      )}
+
+      {verifying && <VerifyDialog payment={verifying.payment} approved={verifying.approved} busy={busy}
+                                  onCancel={() => setVerifying(null)} onConfirm={() => verify(verifying.payment, verifying.approved)} />}
+    </>
+  );
+}
+
+function VerifyDialog({ payment, approved, busy, onCancel, onConfirm }: {
+  payment: AdminPayment; approved: boolean; busy: boolean; onCancel: () => void; onConfirm: () => void;
+}) {
+  const details = `${money(payment.amount)} for ${payment.paidFor}` +
+    (payment.transactionRef ? `, reference "${payment.transactionRef}"` : "") +
+    (payment.payerName ? `, paid by ${payment.payerName}` : "") +
+    (payment.payerBank ? ` (${payment.payerBank})` : "");
+  return approved ? (
+    <ConfirmDialog title="Approve this payment?" confirmLabel="Approve" cancelLabel="Go back" busy={busy} onCancel={onCancel} onConfirm={onConfirm}
+                   message={`Only approve once you can see ${details} in the bank account. The ${payment.bookingId ? "booking will be confirmed" : "order will be marked paid"} and the student notified.`} />
+  ) : (
+    <ConfirmDialog title="Reject this payment?" confirmLabel="Reject" cancelLabel="Go back" busy={busy} onCancel={onCancel} onConfirm={onConfirm}
+                   message={`Reject ${details} if the money never arrived or the details don't match. The student can then pay again.`} />
+  );
 }
 
 export default AdminOrders;

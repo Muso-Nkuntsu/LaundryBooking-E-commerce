@@ -5,6 +5,8 @@ import com.cput.laundryecommercebookingsystem.domain.OrderItem;
 import com.cput.laundryecommercebookingsystem.domain.Student;
 import com.cput.laundryecommercebookingsystem.domain.enums.OrderStatus;
 
+import com.cput.laundryecommercebookingsystem.dto.CheckoutRequest;
+
 import java.util.List;
 import java.util.Optional;
 /**
@@ -16,6 +18,9 @@ import java.util.Optional;
 public interface IOrderService {
 
     Order createOrder(Student student, List<OrderItem> orderItems, double totalAmount);
+
+    /** Turns a cart into a PENDING order, with prices from the database, and reserves the stock. */
+    Order checkout(Long studentId, List<CheckoutRequest.Item> items);
 
     Order placeOrder(Long orderId);
 

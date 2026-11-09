@@ -1,94 +1,105 @@
-import { useLocation, useNavigate } from "react-router-dom";
+
+import { Link, useLocation } from "react-router-dom";
 import type { Booking } from "../../types/booking";
+import type { PaymentRecord } from "../../services/paymentService";
+import { EmptyState } from "../../components/common/States";
+import Icon from "../../components/common/Icon";
+import { formatCurrency } from "../../utilis/FormatCurrency";
+import { STATUS_LABEL, STATUS_PILL, bookingDate, bookingTime } from "../../utilis/bookingDisplay";
 
 function BookingConfirmation() {
   const location = useLocation();
-  const navigate = useNavigate();
+  const state = (location.state ?? {}) as {
+    booking?: Booking;
+    payment?: PaymentRecord | null;
+  };
 
-  const booking = location.state?.booking as Booking | undefined;
+  const booking = state.booking;
+  const payment = state.payment;
 
-  // Prevent direct access without a booking
   if (!booking) {
     return (
-      <div>
-        <h1>No Booking Found</h1>
-
-        <p>
-          There is no booking information available.
-        </p>
-
-        <button onClick={() => navigate("/make-booking")}>
-          Make a Booking
-        </button>
+      <div className="page narrow">
+        <EmptyState
+          title="No booking to show"
+          message="Start a new booking to see your booking details."
+          action={
+            <Link to="/laundry" className="btn btn-primary">
+              Browse Services
+            </Link>
+          }
+        />
       </div>
     );
   }
 
-  const room = booking.laundryMachine?.laundryRoom;
   const machine = booking.laundryMachine;
-  const timeSlot = booking.timeSlot;
+  const room = machine?.laundryRoom;
+  // A booking with a cost stays PENDING (machine held) until it is paid for.
+  const needsPayment = booking.status === "PENDING" && booking.totalAmount > 0;
+  const paymentState = { amount: booking.totalAmount, description: `Booking #${booking.id}`, bookingId: booking.id };
 
   return (
-    <div>
-      <h1>Booking Confirmed!</h1>
+    <div className="page narrow">
+      <div className="state" style={{ paddingTop: 8, paddingBottom: 24 }}>
+        {needsPayment ? (
+          <>
+            <h1>Almost done: pay to confirm</h1>
+            <p>{bookingDate(booking)}, {bookingTime(booking)}</p>
+            <p className="muted">
+              We're holding this machine for you. The booking is confirmed once you've paid {formatCurrency(booking.totalAmount)}.
+            </p>
+          </>
+        ) : (
+          <>
+            <span className="tick"><Icon name="check" size={36} /></span>
+            <h1>You're booked</h1>
+            <p>{bookingDate(booking)}, {bookingTime(booking)}</p>
+          </>
+        )}
+      </div>
 
-      <p>
-        Your laundry booking has been successfully created.
-      </p>
+      <section className="card">
+        <dl className="dl">
+          <dt>Booking number</dt>
+          <dd>#{booking.id}</dd>
 
-      <hr />
+          <dt>Laundry room</dt>
+          <dd>{room ? `${room.roomNumber}, ${room.location}` : "Not set"}</dd>
 
-      <h2>Booking Details</h2>
+          <dt>Machine</dt>
+          <dd>{machine ? `${machine.machineNumber} (${machine.type})` : "Not set"}</dd>
 
-      <p>
-        <strong>Booking ID:</strong> {booking.id}
-      </p>
+          <dt>Booking status</dt>
+          <dd>
+            <span className={STATUS_PILL[booking.status] ?? "pill pill-off"}>
+              {STATUS_LABEL[booking.status] ?? booking.status}
+            </span>
+          </dd>
 
-      <p>
-        <strong>Laundry Room:</strong>{" "}
-        {room
-          ? `${room.roomNumber} - ${room.location}`
-          : "Not available"}
-      </p>
+          <dt>Payment status</dt>
+          <dd>{payment?.status ?? "Not submitted"}</dd>
 
-      <p>
-        <strong>Machine:</strong>{" "}
-        {machine
-          ? `${machine.machineNumber} (${machine.type})`
-          : "Not available"}
-      </p>
+          <dt>Total</dt>
+          <dd><strong>{formatCurrency(booking.totalAmount ?? 0)}</strong></dd>
+        </dl>
+      </section>
 
-      <p>
-        <strong>Date:</strong>{" "}
-        {timeSlot?.date || "Not available"}
-      </p>
-
-      <p>
-        <strong>Time Slot:</strong>{" "}
-        {timeSlot
-          ? `${timeSlot.startTime} - ${timeSlot.endTime}`
-          : "Not available"}
-      </p>
-
-      <p>
-        <strong>Status:</strong>{" "}
-        {booking.status}
-      </p>
-
-      <p>
-        <strong>Total Amount:</strong>{" "}
-        R{booking.totalAmount.toFixed(2)}
-      </p>
-
-      <hr />
-
-      <button onClick={() => navigate("/my-bookings")}>
-        View My Bookings
-      </button>
-
-      <button onClick={() => navigate("/make-booking")}>
-        Make Another Booking
-      </button>
+      <div className="btn-row" style={{ marginTop: 18 }}>
+        {needsPayment ? (
+          <>
+            <Link to="/payment" state={paymentState} className="btn btn-primary">
+              Pay {formatCurrency(booking.totalAmount)} now
+            </Link>
+            <Link to="/my-bookings" className="btn btn-ghost">Pay later</Link>
+          </>
+        ) : (
+          <>
+            <Link to="/my-bookings" className="btn btn-primary">View my bookings</Link>
+            <Link to="/make-booking" className="btn btn-ghost">Book another</Link>
+          </>
+        )}
+      </div>
     </div>
   );
 }

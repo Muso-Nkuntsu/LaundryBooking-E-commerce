@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { LaundryService } from "../../types/LaundryService";
 import { laundryServiceService } from "../../services/LaundryServiceService";
-import { getApiErrorMessage } from "../../services/api";
+import { getApiErrorMessage } from "../../services/Api";
 import { colors, radius, type, shadow } from "../../styles/Theme";
 import { formatCurrency } from "../../utilis/FormatCurrency";
 
@@ -39,7 +39,7 @@ const ServiceDetails: React.FC = () => {
   const handleAddToBooking = () => {
     if (!service) return;
     navigate("/bookings/create", {
-      state: { laundryServiceId: service.id, laundryServiceName: service.name },
+      state: { laundryServiceId: service.id, laundryServiceName: service.name, laundryServicePrice: service.price },
     });
   };
 
@@ -154,7 +154,7 @@ const ServiceDetails: React.FC = () => {
             {service.isAvailable ? "Available" : "Unavailable"}
           </span>
 
-          <h1 style={{ fontFamily: type.display, fontSize: "clamp(22px, 4vw, 28px)", color: colors.text, margin: "0 0 8px" }}>
+          <h1 style={{ fontFamily: type.display, fontSize: "clamp(1.75rem, 4.5vw, 2.5rem)", fontWeight: 800, color: colors.text, margin: "0 0 8px" }}>
             {service.name}
           </h1>
 

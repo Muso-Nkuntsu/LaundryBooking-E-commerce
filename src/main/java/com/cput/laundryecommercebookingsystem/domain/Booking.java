@@ -7,6 +7,7 @@
 
 package com.cput.laundryecommercebookingsystem.domain;
 import com.cput.laundryecommercebookingsystem.domain.enums.BookingStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -42,22 +43,22 @@ public class Booking {
     private double totalAmount;
 
     // FK: studentId — student who made the booking
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
     // FK: machineId — the specific machine reserved (room is derived from this)
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "machine_id", nullable = false)
     private LaundryMachine laundryMachine;
 
     // FK: timeSlotId — the reserved time slot
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "time_slot_id", nullable = false)
     private TimeSlot timeSlot;
 
     // FK: serviceId — optional laundry service attached to this booking
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "service_id")
     private LaundryService laundryService;
 
@@ -103,6 +104,7 @@ public class Booking {
      * machine, rather than storing a separate (and potentially
      * inconsistent) room reference on Booking itself.
      */
+    @JsonIgnore // already available as laundryMachine.laundryRoom
     public LaundryRoom getLaundryRoom() {
         return laundryMachine != null ? laundryMachine.getLaundryRoom() : null;
     }

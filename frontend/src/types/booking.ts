@@ -42,6 +42,7 @@ export interface Booking {
   };
   laundryMachine: LaundryMachine;
   timeSlot: TimeSlot;
+  laundryService?: { id: number; serviceName: string; price: number } | null;
 }
 
 export interface CreateBookingRequest {
@@ -49,5 +50,4 @@ export interface CreateBookingRequest {
   machineId: number;
   timeSlotId: number;
   serviceId?: number;
-  totalAmount: number;
 }

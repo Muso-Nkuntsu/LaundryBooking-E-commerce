@@ -1,34 +1,66 @@
 package com.cput.laundryecommercebookingsystem.controller;
 
-import com.cput.laundryecommercebookingsystem.controller.dto.admin.AdminDtos.ProductRow;
 import com.cput.laundryecommercebookingsystem.domain.Product;
-import com.cput.laundryecommercebookingsystem.repository.IProductRepository;
+import com.cput.laundryecommercebookingsystem.service.IProductService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.NoSuchElementException;
+
 /**
- * Talent Nocuze
- * 230405886
+ * Products sold in the laundry shop.
+ * Same endpoint style as LaundryServiceController.
  */
 @RestController
 @RequestMapping("/product")
 public class ProductController {
 
-    private final IProductRepository products;
+    private final IProductService productService;
 
-    public ProductController(IProductRepository products) {
-        this.products = products;
+    public ProductController(IProductService productService) {
+        this.productService = productService;
     }
 
-    @GetMapping("/getall")
-    public List<ProductRow> getAll() {
-        return products.findAll().stream().filter(Product::isActive).map(ProductRow::from).toList();
+    @PostMapping("/create")
+    public ResponseEntity<Product> create(@RequestBody Product product) {
+        Product created = productService.create(product);
+        if (created == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        return ResponseEntity.ok(created);
     }
 
     @GetMapping("/read/{id}")
-    public ProductRow read(@PathVariable Long id) {
-        return products.findById(id).filter(Product::isActive).map(ProductRow::from)
-                .orElseThrow(() -> new NoSuchElementException("Product not found."));
+    public ResponseEntity<Product> read(@PathVariable Long id) {
+        Product product = productService.read(id);
+        // A deactivated product is hidden from the shop (the admin dashboard still sees it).
+        if (product == null || !product.isActive()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(product);
+    }
+
+    @PostMapping("/update")
+    public ResponseEntity<Product> update(@RequestBody Product product) {
+        Product updated = productService.update(product);
+        if (updated == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Boolean> delete(@PathVariable Long id) {
+        boolean deleted = productService.delete(id);
+        if (!deleted) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(false);
+        }
+        return ResponseEntity.ok(true);
+    }
+
+    @GetMapping("/getall")
+    public ResponseEntity<List<Product>> getAll() {
+        return ResponseEntity.ok(productService.getAll().stream().filter(Product::isActive).toList());
     }
 }

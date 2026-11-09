@@ -14,19 +14,19 @@ public interface ILaundryRoomService {
 
     LaundryRoom createRoom(String roomNumber, String location, int capacity, String description);
 
-    LaundryRoom activateRoom(int roomId);
+    LaundryRoom activateRoom(Long roomId);
 
-    LaundryRoom deactivateRoom(int roomId);
+    LaundryRoom deactivateRoom(Long roomId);
 
-    LaundryRoom updateRoom(int roomId, String location, int capacity, String description);
+    LaundryRoom updateRoom(Long roomId, String location, int capacity, String description);
 
-    LaundryRoom addMachineToRoom(int roomId, LaundryMachine machine);
+    LaundryRoom addMachineToRoom(Long roomId, LaundryMachine machine);
 
-    Optional<LaundryRoom> getRoomById(int roomId);
+    Optional<LaundryRoom> getRoomById(Long roomId);
 
     List<LaundryRoom> getActiveRooms();
 
     List<LaundryRoom> getAllRooms();
 
-    boolean deleteRoom(int roomId);
+    boolean deleteRoom(Long roomId);
 }

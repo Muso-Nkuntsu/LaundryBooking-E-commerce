@@ -1,218 +1,252 @@
-import { Fragment, useMemo, useState } from "react";
-import type { FormEvent } from "react";
+import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import { ErrorState, Loading } from "../../components/common/States";
+import { useToast } from "../../context/useToast";
+import { useFetch } from "../../hooks/useFetch";
+import { BOOKING_NEXT, adminApi } from "../../services/adminApi";
+import type { AdminBooking, BookingStatus, Schedule } from "../../services/adminApi";
+import { friendlyError } from "../../utilis/errorMessage";
+import { ACTION_LABEL, Modal, PageHead, Segmented, Status, dateTime, money, shortDate, shortTime, statusLabel, todayIso } from "./adminUi";
 
-import { getApiErrorMessage } from "../../services/Api";
-import { adminService } from "../../services/adminService";
-import { Badge, LoadState, Notice, money, useLoad } from "../../components/admin/ui";
-import type { BookingStatus, MachineStatus } from "../../types/admin";
+type Tab = "list" | "schedule";
 
-const BOOKING_STATUSES: BookingStatus[] = ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"];
-const MACHINE_STATUSES: MachineStatus[] = ["AVAILABLE", "IN_USE", "OUT_OF_ORDER"];
-
-const loadBookings = () => adminService.getBookings();
-const loadMachines = () => adminService.getMachines();
-const loadRooms = () => adminService.getRooms();
-
+// Every laundry booking: filter, view details, change status, and see a day's schedule.
 function AdminBookings() {
-    const [tab, setTab] = useState<"bookings" | "machines">("bookings");
-    const bookings = useLoad(loadBookings);
-    const machines = useLoad(loadMachines);
-    const rooms = useLoad(loadRooms);
-    const [filter, setFilter] = useState<"ALL" | BookingStatus>("ALL");
-    const [openId, setOpenId] = useState<number | null>(null);
-    const [msg, setMsg] = useState<{ kind: "err" | "okk"; text: string } | null>(null);
-    const [busy, setBusy] = useState(false);
-    const [newMachine, setNewMachine] = useState({ number: "", type: "", status: "AVAILABLE" as MachineStatus, roomId: "" });
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState<Tab>("list");
 
-    const shown = useMemo(
-        () => (bookings.data ?? []).filter((b) => filter === "ALL" || b.status === filter),
-        [bookings.data, filter]
-    );
+  return (
+    <>
+      <PageHead title="Bookings" intro="Two students can never book the same machine in the same slot; the system blocks it." />
+      <div className="adm-tabs">
+        <Segmented label="View" value={tab} onChange={setTab} options={[
+          { value: "list", label: "All bookings" },
+          { value: "schedule", label: "Day schedule" },
+        ]} />
+      </div>
+      {tab === "list" ? <BookingList initialStatus={(params.get("status") as BookingStatus) ?? ""} /> : <DaySchedule />}
+    </>
+  );
+}
 
-    const run = async (action: () => Promise<unknown>, success: string, after: () => Promise<void>) => {
-        setBusy(true);
-        setMsg(null);
-        try {
-            await action();
-            setMsg({ kind: "okk", text: success });
-            await after();
-        } catch (err) {
-            setMsg({ kind: "err", text: getApiErrorMessage(err) });
-        } finally {
-            setBusy(false);
-        }
-    };
+function BookingList({ initialStatus }: { initialStatus: "" | BookingStatus }) {
+  const toast = useToast();
+  const [status, setStatus] = useState<"" | BookingStatus>(initialStatus);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [search, setSearch] = useState("");
+  const [q, setQ] = useState("");
+  const [selected, setSelected] = useState<AdminBooking | null>(null);
+  const [cancelling, setCancelling] = useState<AdminBooking | null>(null);
+  const [busy, setBusy] = useState(false);
 
-    const addMachine = (event: FormEvent) => {
-        event.preventDefault();
-        if (!newMachine.roomId) {
-            setMsg({ kind: "err", text: "Choose a laundry room for the machine." });
-            return;
-        }
-        void run(
-            () => adminService.createMachine(newMachine.number.trim(), newMachine.type.trim(), newMachine.status, Number(newMachine.roomId)),
-            "Machine added.",
-            async () => {
-                setNewMachine({ number: "", type: "", status: "AVAILABLE", roomId: "" });
-                await machines.reload();
-            }
-        );
-    };
+  const key = `${status}|${from}|${to}|${q}`;
+  const { data, loading, error, reload } = useFetch(() => adminApi.bookings({ status, from, to, q }), key);
+  const bookings = data ?? [];
 
-    return (
-        <div>
-            <div className="adm-tabs">
-                <button className={tab === "bookings" ? "on" : ""} onClick={() => setTab("bookings")}>Bookings</button>
-                <button className={tab === "machines" ? "on" : ""} onClick={() => setTab("machines")}>Machines & availability</button>
-            </div>
-            {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
+  const change = async (booking: AdminBooking, next: BookingStatus) => {
+    setBusy(true);
+    try {
+      const updated = await adminApi.setBookingStatus(booking.bookingId, next);
+      toast.success(`Booking #${booking.bookingId}: ${statusLabel("booking", updated.status)}.`);
+      if (selected?.bookingId === booking.bookingId) setSelected(updated);
+      reload();
+    } catch (err) {
+      toast.error(friendlyError(err, "The status couldn't be changed."));
+    } finally {
+      setBusy(false);
+      setCancelling(null);
+    }
+  };
 
-            {tab === "bookings" && (
-                <section className="adm-card">
-                    <div className="adm-toolbar">
-                        <label htmlFor="b-filter" style={{ margin: 0 }}>Status</label>
-                        <select id="b-filter" value={filter} onChange={(e) => setFilter(e.target.value as "ALL" | BookingStatus)}>
-                            <option value="ALL">All</option>
-                            {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                        <span className="adm-muted">{shown.length} booking(s)</span>
-                        <button onClick={bookings.reload}>Refresh</button>
-                    </div>
-                    <LoadState loading={bookings.loading} error={bookings.error} onRetry={bookings.reload} />
-                    <div className="adm-table-wrap">
-                        <table>
-                            <thead>
-                            <tr><th>#</th><th>Student</th><th>Room / machine</th><th>Date</th><th>Time</th><th>Total</th><th>Status</th><th>Update</th></tr>
-                            </thead>
-                            <tbody>
-                            {shown.map((b) => (
-                                <Fragment key={b.id}>
-                                    <tr className="clickable" onClick={() => setOpenId(openId === b.id ? null : b.id)}>
-                                        <td>{b.id}</td>
-                                        <td>{b.student?.name ?? "-"}</td>
-                                        <td>{b.roomNumber ?? "-"} / {b.machineNumber ?? "-"}</td>
-                                        <td>{b.slotDate ?? "-"}</td>
-                                        <td>{b.startTime?.slice(0, 5)}-{b.endTime?.slice(0, 5)}</td>
-                                        <td>{money(b.totalAmount)}</td>
-                                        <td><Badge text={b.status} /></td>
-                                        <td onClick={(e) => e.stopPropagation()}>
-                                            <select
-                                                aria-label={`Status for booking ${b.id}`}
-                                                value={b.status}
-                                                disabled={busy}
-                                                onChange={(e) =>
-                                                    void run(
-                                                        () => adminService.updateBookingStatus(b.id, e.target.value as BookingStatus),
-                                                        `Booking #${b.id} updated.`,
-                                                        async () => { await bookings.reload(); }
-                                                    )
-                                                }
-                                            >
-                                                {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                                            </select>
-                                        </td>
-                                    </tr>
-                                    {openId === b.id && (
-                                        <tr>
-                                            <td colSpan={8}>
-                                                <strong>Booking #{b.id}</strong> · {b.student?.name} ({b.student?.email}) · Service: {b.serviceName ?? "none"} ·
-                                                Booked on {b.bookingDate?.replace("T", " ").slice(0, 16)} · Machine status: {b.machineStatus ?? "-"}
-                                            </td>
-                                        </tr>
-                                    )}
-                                </Fragment>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    <p className="adm-muted">
-                        The server blocks double bookings: a machine cannot be booked twice for the same or an overlapping time slot,
-                        and a student cannot hold two overlapping bookings. Cancelled bookings free the slot.
-                    </p>
-                </section>
+  const ask = (booking: AdminBooking, next: BookingStatus) => {
+    if (next === "CANCELLED") setCancelling(booking);
+    else change(booking, next);
+  };
+
+  return (
+    <>
+      <form className="adm-tools" onSubmit={(e) => { e.preventDefault(); setQ(search.trim()); }}>
+        <input className="input grow" type="search" placeholder="Search student, email, machine or #number" value={search}
+               onChange={(e) => setSearch(e.target.value)} aria-label="Search bookings" />
+        <label className="small muted" htmlFor="b-from">From</label>
+        <input id="b-from" className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        <label className="small muted" htmlFor="b-to">To</label>
+        <input id="b-to" className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        <button type="submit" className="btn btn-primary btn-sm">Search</button>
+      </form>
+      <div className="adm-tools">
+        <Segmented label="Status" value={status} onChange={setStatus} options={[
+          { value: "", label: "All" },
+          { value: "PENDING", label: "Awaiting payment" },
+          { value: "CONFIRMED", label: "Confirmed" },
+          { value: "COMPLETED", label: "Completed" },
+          { value: "CANCELLED", label: "Cancelled" },
+        ]} />
+      </div>
+
+      {error ? <ErrorState message={error} onRetry={reload} /> : loading && !data ? <Loading /> : (
+        <section className="card">
+          <p className="adm-count">{bookings.length} {bookings.length === 1 ? "booking" : "bookings"}</p>
+          <div className="table-wrap">
+            <table className="table" style={{ minWidth: 760 }}>
+              <thead>
+                <tr><th>#</th><th>Wash</th><th>Machine</th><th>Student</th><th className="num">Amount</th><th>Status</th><th /></tr>
+              </thead>
+              <tbody>
+                {bookings.map((b) => (
+                  <tr key={b.bookingId} className="clickable" onClick={() => setSelected(b)}>
+                    <td>{b.bookingId}</td>
+                    <td>{shortDate(b.date)}<span className="sub">{shortTime(b.startTime)}–{shortTime(b.endTime)}</span></td>
+                    <td>{b.machineNumber}<span className="sub">Room {b.roomNumber}</span></td>
+                    <td>{b.studentName}<span className="sub">{b.studentEmail}</span></td>
+                    <td className="num">{money(b.totalAmount)}</td>
+                    <td><Status kind="booking" value={b.status} /></td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <div className="actions-cell">
+                        {BOOKING_NEXT[b.status].map((next) => (
+                          <button key={next} type="button" disabled={busy}
+                                  className={`btn btn-sm ${next === "CANCELLED" ? "btn-danger" : "btn-ghost"}`}
+                                  onClick={() => ask(b, next)}>
+                            {ACTION_LABEL[next]}
+                          </button>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {bookings.length === 0 && <p className="adm-empty">No bookings match.</p>}
+          </div>
+        </section>
+      )}
+
+      {selected && (
+        <Modal title={`Booking #${selected.bookingId}`} onClose={() => setSelected(null)}>
+          <div className="row"><Status kind="booking" value={selected.status} /></div>
+          <dl className="adm-facts">
+            <div><dt>Student</dt><dd>{selected.studentName}</dd></div>
+            <div><dt>Email</dt><dd>{selected.studentEmail}</dd></div>
+            <div><dt>Date</dt><dd>{shortDate(selected.date)}</dd></div>
+            <div><dt>Time</dt><dd>{shortTime(selected.startTime)}–{shortTime(selected.endTime)}</dd></div>
+            <div><dt>Machine</dt><dd>{selected.machineNumber} ({selected.machineType})</dd></div>
+            <div><dt>Room</dt><dd>{selected.roomNumber}</dd></div>
+            <div><dt>Service</dt><dd>{selected.serviceName ?? "None"}</dd></div>
+            <div><dt>Amount</dt><dd>{money(selected.totalAmount)}</dd></div>
+            <div><dt>Booked on</dt><dd>{dateTime(selected.bookedAt)}</dd></div>
+          </dl>
+          <div className="adm-section">
+            <h3>Change status</h3>
+            {BOOKING_NEXT[selected.status].length === 0 ? (
+              <p className="muted">This booking is finished, so its status can't change any more.</p>
+            ) : (
+              <>
+                {selected.status === "PENDING" && (
+                  <p className="muted small">Confirming without a payment is for cash paid at the office. EFTs are confirmed automatically
+                    when you approve the payment on the Orders &amp; payments page.</p>
+                )}
+                <div className="btn-row">
+                  {BOOKING_NEXT[selected.status].map((next) => (
+                    <button key={next} type="button" disabled={busy}
+                            className={`btn btn-sm ${next === "CANCELLED" ? "btn-danger" : "btn-primary"}`}
+                            onClick={() => ask(selected, next)}>
+                      {ACTION_LABEL[next]}
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
+          </div>
+        </Modal>
+      )}
 
-            {tab === "machines" && (
-                <>
-                    <section className="adm-card">
-                        <h2>Add a machine</h2>
-                        <form className="adm-form" onSubmit={addMachine}>
-                            <div>
-                                <label htmlFor="m-num">Machine number</label>
-                                <input id="m-num" value={newMachine.number} onChange={(e) => setNewMachine({ ...newMachine, number: e.target.value })} required />
-                            </div>
-                            <div>
-                                <label htmlFor="m-type">Type</label>
-                                <input id="m-type" placeholder="Washer / Dryer" value={newMachine.type} onChange={(e) => setNewMachine({ ...newMachine, type: e.target.value })} required />
-                            </div>
-                            <div>
-                                <label htmlFor="m-room">Laundry room</label>
-                                <select id="m-room" value={newMachine.roomId} onChange={(e) => setNewMachine({ ...newMachine, roomId: e.target.value })} required>
-                                    <option value="">Select room</option>
-                                    {(rooms.data ?? []).map((r) => <option key={r.roomId} value={r.roomId}>{r.roomNumber}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label htmlFor="m-status">Status</label>
-                                <select id="m-status" value={newMachine.status} onChange={(e) => setNewMachine({ ...newMachine, status: e.target.value as MachineStatus })}>
-                                    {MACHINE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                                </select>
-                            </div>
-                            <div className="wide"><button className="primary" type="submit" disabled={busy}>Add machine</button></div>
-                        </form>
-                    </section>
+      {cancelling && (
+        <ConfirmDialog title={`Cancel booking #${cancelling.bookingId}?`}
+                       message={`${cancelling.studentName}'s slot on ${shortDate(cancelling.date)} at ${shortTime(cancelling.startTime)} will be freed and they'll get a notification.`}
+                       confirmLabel="Cancel booking" cancelLabel="Keep it" busy={busy}
+                       onCancel={() => setCancelling(null)} onConfirm={() => change(cancelling, "CANCELLED")} />
+      )}
+    </>
+  );
+}
 
-                    <section className="adm-card">
-                        <h2>Machines</h2>
-                        <LoadState loading={machines.loading} error={machines.error} onRetry={machines.reload} />
-                        <div className="adm-table-wrap">
-                            <table>
-                                <thead><tr><th>Number</th><th>Type</th><th>Room</th><th>Availability</th><th></th></tr></thead>
-                                <tbody>
-                                {(machines.data ?? []).map((m) => (
-                                    <tr key={m.machineId}>
-                                        <td>{m.machineNumber}</td>
-                                        <td>{m.type}</td>
-                                        <td>{m.laundryRoom?.roomNumber ?? "-"}</td>
-                                        <td>
-                                            <select
-                                                aria-label={`Status for machine ${m.machineNumber}`}
-                                                value={m.status}
-                                                disabled={busy}
-                                                onChange={(e) =>
-                                                    void run(
-                                                        () => adminService.updateMachineStatus(m.machineId, e.target.value as MachineStatus),
-                                                        `Machine ${m.machineNumber} set to ${e.target.value}.`,
-                                                        async () => { await machines.reload(); }
-                                                    )
-                                                }
-                                            >
-                                                {MACHINE_STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
-                                            </select>{" "}
-                                            <Badge text={m.status} />
-                                        </td>
-                                        <td>
-                                            <button
-                                                className="danger"
-                                                disabled={busy}
-                                                onClick={() => {
-                                                    if (!window.confirm(`Delete machine ${m.machineNumber}?`)) return;
-                                                    void run(() => adminService.deleteMachine(m.machineId), "Machine deleted.", async () => { await machines.reload(); });
-                                                }}
-                                            >
-                                                Delete
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-                </>
-            )}
-        </div>
-    );
+/** Every machine against every time slot for one day. */
+function DaySchedule() {
+  const [date, setDate] = useState(todayIso());
+  const { data, loading, error, reload } = useFetch(() => adminApi.schedule(date), date);
+
+  return (
+    <>
+      <div className="adm-tools">
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDate(shift(date, -1))}>← Previous day</button>
+        <input className="input" type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} aria-label="Date" />
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDate(shift(date, 1))}>Next day →</button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDate(todayIso())}>Today</button>
+      </div>
+      {error ? <ErrorState message={error} onRetry={reload} /> : loading && !data ? <Loading /> : data && <ScheduleGrid schedule={data} />}
+    </>
+  );
+}
+
+function ScheduleGrid({ schedule }: { schedule: Schedule }) {
+  if (schedule.slots.length === 0) {
+    return <div className="card adm-empty">There are no time slots on {shortDate(schedule.date)}. Add some under Machines &amp; slots → Time slots.</div>;
+  }
+  if (schedule.machines.length === 0) {
+    return <div className="card adm-empty">There are no machines yet. Add some under Machines &amp; slots.</div>;
+  }
+  const bookingAt = (machineId: number, slotId: number) =>
+    schedule.bookings.find((b) => b.machineId === machineId && b.timeSlotId === slotId);
+
+  return (
+    <>
+      <p className="adm-count">
+        {schedule.bookings.length} booked of {schedule.slots.filter((s) => s.available).length * schedule.machines.length} machine-slots on {shortDate(schedule.date)}
+      </p>
+      <div className="adm-grid-wrap">
+        <table className="adm-grid">
+          <thead>
+            <tr>
+              <th className="time">Time</th>
+              {schedule.machines.map((m) => (
+                <th key={m.machineId} title={`Room ${m.roomNumber}`}>{m.machineNumber}<br /><span className="muted small">{m.type}</span></th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {schedule.slots.map((slot) => (
+              <tr key={slot.timeSlotId}>
+                <th className="time">{shortTime(slot.startTime)}–{shortTime(slot.endTime)}</th>
+                {schedule.machines.map((m) => {
+                  const booking = bookingAt(m.machineId, slot.timeSlotId);
+                  if (booking) {
+                    return (
+                      <td key={m.machineId} className={booking.status === "PENDING" ? "pending" : "booked"}
+                          title={`#${booking.bookingId} ${booking.studentName} (${booking.status.toLowerCase()})`}>
+                        {booking.studentName.split(" ")[0]}
+                      </td>
+                    );
+                  }
+                  if (!slot.available) return <td key={m.machineId} className="closed">Closed</td>;
+                  if (m.status === "OUT_OF_ORDER") return <td key={m.machineId} className="broken">Out of order</td>;
+                  return <td key={m.machineId} className="free">Free</td>;
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="muted small" style={{ marginTop: 10 }}>Blue: confirmed or completed · Yellow: awaiting payment · Striped: slot closed. Hover a booking to see who it is.</p>
+    </>
+  );
+}
+
+function shift(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export default AdminBookings;

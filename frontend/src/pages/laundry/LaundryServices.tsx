@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { LaundryService } from "../../types/LaundryService";
 import { laundryServiceService } from "../../services/LaundryServiceService";
-import { getApiErrorMessage } from "../../services/api";
+import { getApiErrorMessage } from "../../services/Api";
 import { colors, radius, type } from "../../styles/Theme";
 import ServiceCard from "../../components/laundry/ServiceCard";
 
@@ -33,13 +33,13 @@ const LaundryServices: React.FC = () => {
 
   const selectService = (service: LaundryService) =>
     navigate("/bookings/create", {
-      state: { laundryServiceId: service.id, laundryServiceName: service.name },
+      state: { laundryServiceId: service.id, laundryServiceName: service.name, laundryServicePrice: service.price },
     });
 
   return (
-    <div style={{ maxWidth: "960px", margin: "0 auto", padding: "clamp(16px, 4vw, 32px)", boxSizing: "border-box" }}>
+    <div style={{ maxWidth: "1112px", margin: "0 auto", padding: "clamp(22px, 4vw, 44px) 16px 32px", boxSizing: "border-box" }}>
       <header style={{ marginBottom: "20px" }}>
-        <h1 style={{ fontFamily: type.display, fontSize: "clamp(22px, 4vw, 28px)", color: colors.text, margin: "0 0 4px" }}>
+        <h1 style={{ fontFamily: type.display, fontSize: "clamp(1.75rem, 4.5vw, 2.5rem)", fontWeight: 800, color: colors.text, margin: "0 0 4px" }}>
           Laundry services
         </h1>
         <p style={{ fontFamily: type.body, fontSize: "14px", color: colors.textMuted, margin: 0 }}>

@@ -1,8 +1,12 @@
 package com.cput.laundryecommercebookingsystem.service.impl;
 
 import com.cput.laundryecommercebookingsystem.domain.Student;
+import com.cput.laundryecommercebookingsystem.exception.EmailNotVerifiedException;
 import com.cput.laundryecommercebookingsystem.repository.IStudentRepository;
+import com.cput.laundryecommercebookingsystem.service.IEmailVerificationService;
 import com.cput.laundryecommercebookingsystem.service.IStudentService;
+import com.cput.laundryecommercebookingsystem.factory.StudentFactory;
+import com.cput.laundryecommercebookingsystem.util.PasswordHasher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,34 +23,150 @@ import java.util.Optional;
 public class StudentServiceImpl implements IStudentService {
 
     private final IStudentRepository IStudentRepository;
+    private final IEmailVerificationService emailVerificationService;
 
-    public StudentServiceImpl(IStudentRepository IStudentRepository) {
+    public StudentServiceImpl(IStudentRepository IStudentRepository,
+                              IEmailVerificationService emailVerificationService) {
         this.IStudentRepository = IStudentRepository;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Override
     @Transactional
     public Student createStudent(Student student) {
+        if (student == null) {
+            throw new IllegalArgumentException("Student details are required.");
+        }
+
+        // The factory checks the required fields and sets the creation date.
+        Student validated = StudentFactory.createStudent(
+                trim(student.getFirstName()),
+                trim(student.getLastName()),
+                normaliseEmail(student.getEmail()),
+                trim(student.getPhoneNumber()),
+                student.getPassword());
+
+        if (validated == null) {
+            throw new IllegalArgumentException(
+                    "First name, last name, email, phone number and password are all required.");
+        }
+        PasswordHasher.requireStrong(validated.getPassword());
+        if (IStudentRepository.findByEmail(validated.getEmail()).isPresent()) {
+            throw new IllegalStateException("An account with this email already exists.");
+        }
 
         Student studentToSave = new Student.Builder()
-                .setFirstName(student.getFirstName())
-                .setLastName(student.getLastName())
-                .setEmail(student.getEmail())
-                .setPhoneNumber(student.getPhoneNumber())
-                .setPassword(student.getPassword())
-                .setCreatedAt(student.getCreatedAt())
+                .setFirstName(validated.getFirstName())
+                .setLastName(validated.getLastName())
+                .setEmail(validated.getEmail())
+                .setPhoneNumber(validated.getPhoneNumber())
+                .setPassword(PasswordHasher.hash(validated.getPassword()))
+                .setCreatedAt(validated.getCreatedAt())
                 .build();
 
-        return IStudentRepository.save(studentToSave);
+        // A new account starts unverified; the student confirms it with the emailed link.
+        Student saved = IStudentRepository.save(studentToSave);
+        emailVerificationService.sendVerificationEmail(saved);
+        return saved;
     }
 
     @Override
     @Transactional
     public Student updateStudent(Student student) {
-        if (!IStudentRepository.existsById(student.getStudentId())) {
-            throw new NoSuchElementException("Student not found.");
+        if (student == null || student.getStudentId() == null) {
+            throw new IllegalArgumentException("Student ID is required.");
         }
-        return IStudentRepository.save(student);
+
+        Student existing = IStudentRepository.findById(student.getStudentId())
+                .orElseThrow(() -> new NoSuchElementException("Student not found."));
+
+        String firstName = valueOrExisting(student.getFirstName(), existing.getFirstName());
+        String lastName = valueOrExisting(student.getLastName(), existing.getLastName());
+        String phoneNumber = valueOrExisting(student.getPhoneNumber(), existing.getPhoneNumber());
+        String email = student.getEmail() == null || student.getEmail().isBlank()
+                ? existing.getEmail()
+                : normaliseEmail(student.getEmail());
+
+        if (!email.equals(existing.getEmail()) && IStudentRepository.findByEmail(email).isPresent()) {
+            throw new IllegalStateException("An account with this email already exists.");
+        }
+
+        // The password only changes when a new one is sent; the creation date never changes.
+        String password;
+        if (student.getPassword() == null || student.getPassword().isBlank()) {
+            password = existing.getPassword();
+        } else {
+            PasswordHasher.requireStrong(student.getPassword());
+            password = PasswordHasher.hash(student.getPassword());
+        }
+
+        // A new email address has not been confirmed yet, so the student must verify it again.
+        boolean emailChanged = !email.equals(existing.getEmail());
+
+        Student updated = new Student.Builder()
+                .setStudentId(existing.getStudentId())
+                .setFirstName(firstName)
+                .setLastName(lastName)
+                .setEmail(email)
+                .setPhoneNumber(phoneNumber)
+                .setPassword(password)
+                .setCreatedAt(existing.getCreatedAt())
+                .setEmailVerified(!emailChanged && existing.isEmailVerified())
+                .setEmailVerifiedAt(emailChanged ? null : existing.getEmailVerifiedAt())
+                // Keep the role and active flag: only an administrator changes those.
+                .setRole(existing.getRole())
+                .setDisabled(existing.isDisabled())
+                .build();
+
+        Student saved = IStudentRepository.save(updated);
+        if (emailChanged) {
+            emailVerificationService.sendVerificationEmail(saved);
+        }
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public Optional<Student> login(String email, String password) {
+        if (email == null || password == null) {
+            return Optional.empty();
+        }
+
+        Optional<Student> found = IStudentRepository.findByEmail(normaliseEmail(email));
+        if (found.isEmpty() || !PasswordHasher.matches(password, found.get().getPassword())) {
+            return Optional.empty();
+        }
+
+        Student student = found.get();
+        if (student.isDisabled()) {
+            return Optional.empty(); // the same "incorrect" message, so nothing extra is revealed
+        }
+
+        // Checked after the password, so only the account owner is told the email is unverified.
+        if (!student.isEmailVerified()) {
+            throw new EmailNotVerifiedException(
+                    "Please verify your email address before logging in. Check your inbox for the verification link.");
+        }
+
+        if (!PasswordHasher.isHashed(student.getPassword())) {
+            // Upgrade an account that still stores the plain password.
+            student.changePasswordHash(PasswordHasher.hash(password));
+            student = IStudentRepository.save(student);
+        }
+
+        return Optional.of(student);
+    }
+
+    private static String trim(String value) {
+        return value == null ? null : value.trim();
+    }
+
+    private static String normaliseEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase();
+    }
+
+    private static String valueOrExisting(String value, String existing) {
+        return value == null || value.isBlank() ? existing : value.trim();
     }
 
     @Override

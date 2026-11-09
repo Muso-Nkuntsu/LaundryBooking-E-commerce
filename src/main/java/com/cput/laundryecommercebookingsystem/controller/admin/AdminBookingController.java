@@ -1,52 +1,56 @@
 package com.cput.laundryecommercebookingsystem.controller.admin;
 
-import com.cput.laundryecommercebookingsystem.controller.dto.admin.AdminDtos.*;
-import com.cput.laundryecommercebookingsystem.domain.Booking;
 import com.cput.laundryecommercebookingsystem.domain.enums.BookingStatus;
-import com.cput.laundryecommercebookingsystem.service.IBookingService;
-import jakarta.validation.Valid;
+import com.cput.laundryecommercebookingsystem.dto.admin.AdminDtos.*;
+import com.cput.laundryecommercebookingsystem.service.admin.AdminBookingService;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Comparator;
+import java.time.LocalDate;
 import java.util.List;
-import java.util.NoSuchElementException;
 
-/**
- * Talent Nocuze
- * 230405886
+/*AdminBookingController.java
+ * Admin only: all laundry bookings, their status, and the day schedule.
  */
 @RestController
 @RequestMapping("/api/admin/bookings")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminBookingController {
 
-    private final IBookingService bookingService;
+    private final AdminBookingService bookingService;
 
-    public AdminBookingController(IBookingService bookingService) {
+    public AdminBookingController(AdminBookingService bookingService) {
         this.bookingService = bookingService;
     }
 
+    /** Example: GET /api/admin/bookings?status=PENDING&from=2026-11-01&to=2026-11-30&q=washer */
     @GetMapping
-    @Transactional(readOnly = true)
-    public List<BookingRow> list() {
-        return bookingService.findAll().stream()
-                .sorted(Comparator.comparing(Booking::getBookingDate, Comparator.nullsLast(Comparator.reverseOrder())))
-                .map(BookingRow::from).toList();
+    public ResponseEntity<List<AdminBookingView>> list(
+            @RequestParam(required = false) BookingStatus status,
+            @RequestParam(required = false) Long machineId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) String q) {
+        return ResponseEntity.ok(bookingService.list(status, machineId, from, to, q));
+    }
+
+    /** Every machine against every time slot for one day. Example: GET /api/admin/bookings/schedule?date=2026-11-10 */
+    @GetMapping("/schedule")
+    public ResponseEntity<ScheduleView> schedule(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(bookingService.schedule(date));
     }
 
     @GetMapping("/{id}")
-    @Transactional(readOnly = true)
-    public BookingRow get(@PathVariable Long id) {
-        return BookingRow.from(bookingService.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Booking not found.")));
+    public ResponseEntity<AdminBookingView> get(@PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.get(id));
     }
 
-    @PutMapping("/{id}/status")
-    @Transactional
-    public BookingRow updateStatus(@PathVariable Long id, @Valid @RequestBody BookingStatusRequest request) {
-        bookingService.findById(id).orElseThrow(() -> new NoSuchElementException("Booking not found."));
-        return BookingRow.from(bookingService.updateStatus(id, BookingStatus.valueOf(request.status())));
+    /** Body: { "status": "CONFIRMED" }. Allowed: PENDING to CONFIRMED or CANCELLED; CONFIRMED to COMPLETED or CANCELLED. */
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<AdminBookingView> updateStatus(@PathVariable Long id, @RequestBody BookingStatusRequest request) {
+        return ResponseEntity.ok(bookingService.updateStatus(id, request == null ? null : request.status()));
     }
 }

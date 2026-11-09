@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { TimeSlot, DateGroup } from "../../types/TimeSlot";
 import { timeSlotService } from "../../services/TimeSlotService";
-import { getApiErrorMessage } from "../../services/api";
+import { getApiErrorMessage } from "../../services/Api";
 import { colors, radius, type, shadow } from "../../styles/Theme";
 import {
   formatWeekday,

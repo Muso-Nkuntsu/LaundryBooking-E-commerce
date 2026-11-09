@@ -1,5 +1,6 @@
 package com.cput.laundryecommercebookingsystem.domain;
 import com.cput.laundryecommercebookingsystem.domain.enums.OrderStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -31,7 +32,7 @@ public class Order {
     @Column(name = "status", nullable = false, length = 20)
     private OrderStatus status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "student_id", nullable = false)
     private Student studentId;
 
@@ -82,6 +83,9 @@ public class Order {
         return studentId;
     }
 
+    // Left out of JSON: each order item already points back to its order, which would loop forever.
+    // Items are loaded through /order-item/order/{orderId} instead.
+    @JsonIgnore
     public List<OrderItem> getOrderItems() {
         return Collections.unmodifiableList(orderItems);
     }

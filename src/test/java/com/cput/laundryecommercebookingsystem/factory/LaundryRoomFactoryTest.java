@@ -1,7 +1,7 @@
 package com.cput.laundryecommercebookingsystem.factory;
 
 import com.cput.laundryecommercebookingsystem.domain.LaundryRoom;
-import com.cput.laundryecommercebookingsystem.domain.Machine;
+import com.cput.laundryecommercebookingsystem.domain.LaundryMachine;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -43,14 +43,14 @@ class LaundryRoomFactoryTest {
 
     @Test
     void createLaundryRoom_withMachinesWithinCapacity_relationshipIsCorrectlySet() {
-        List<Machine> machines = List.of(new Machine(1), new Machine(2));
+        List<LaundryMachine> machines = List.of(new LaundryMachine(1), new LaundryMachine(2));
 
         LaundryRoom room = LaundryRoomFactory.createLaundryRoom(
                 "Room 2C", "East Wing", 4, "Has machines", machines);
 
         assertEquals(2, room.getMachines().size());
 
-        for (Machine machine : room.getMachines()) {
+        for (LaundryMachine machine : room.getMachines()) {
             assertEquals(room, machine.getRoom());
         }
     }
@@ -102,7 +102,7 @@ class LaundryRoomFactoryTest {
 
     @Test
     void createLaundryRoom_withMachinesExceedingCapacity_throwsIllegalArgumentException() {
-        List<Machine> machines = List.of(new Machine(1), new Machine(2), new Machine(3));
+        List<LaundryMachine> machines = List.of(new LaundryMachine(1), new LaundryMachine(2), new LaundryMachine(3));
 
         assertThrows(IllegalArgumentException.class,
                 () -> LaundryRoomFactory.createLaundryRoom("Room 1", "Location", 2, "desc", machines));

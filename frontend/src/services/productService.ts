@@ -1,17 +1,7 @@
+import { apiGet } from "./Api";
 import type { Product } from "../types/Product";
 
-const API_URL = "http://localhost:8080/product";
+export const getAllProducts = (): Promise<Product[]> => apiGet<Product[]>("/product/getall");
 
-async function request<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status})`);
-  }
-  return response.json();
-}
-
-export const getAllProducts = (): Promise<Product[]> =>
-  request<Product[]>(`${API_URL}/getall`);
-
-export const getProductById = (productId: string): Promise<Product> =>
-  request<Product>(`${API_URL}/read/${encodeURIComponent(productId)}`);
+export const getProductById = (productId: string | number): Promise<Product> =>
+  apiGet<Product>(`/product/read/${encodeURIComponent(String(productId))}`);
