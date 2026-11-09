@@ -1,0 +1,14 @@
+/* Product pictures: the whole pack is shown (not cropped) on a white background,
+   so packaging with white edges blends in. Sizes come from .product-art / .adm-thumb. */
+.product-img {
+  display: block;
+  width: 100%;
+  object-fit: contain;
+  background: #fff;
+  padding: 8px;
+  border: 1px solid var(--line);
+}
+.adm-thumb.product-img {
+  width: 44px;
+  padding: 2px;
+}

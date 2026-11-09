@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import Icon from "../../components/common/Icon";
+import ProductImage from "../../components/common/ProductImage";
 import { ErrorState, Loading } from "../../components/common/States";
 import TextField from "../../components/common/TextField";
 import { useToast } from "../../context/useToast";
@@ -81,7 +81,7 @@ function AdminProducts() {
               <tbody>
                 {products.map((p) => (
                   <tr key={p.productId}>
-                    <td>{p.imageUrl ? <img className="adm-thumb" src={assetUrl(p.imageUrl)} alt="" /> : <span className="adm-thumb"><Icon name="bag" size={20} /></span>}</td>
+                    <td><ProductImage name={p.name} imageUrl={p.imageUrl} size="thumb" /></td>
                     <td><strong>{p.name}</strong><span className="sub">{p.category || "No category"}</span></td>
                     <td className="num">{money(p.price)}</td>
                     <td className="num">
