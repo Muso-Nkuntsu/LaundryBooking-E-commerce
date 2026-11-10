@@ -1,0 +1,137 @@
+erDiagram
+    bookings |o--o{ payments : "booking_id"
+    laundry_machine ||--o{ bookings : "machine_id"
+    laundry_rooms ||--o{ laundry_machine : "room_id"
+    laundry_services |o--o{ bookings : "service_id"
+    laundry_services |o--o{ payments : "service_id"
+    laundry_services ||--o{ reviews : "service_id"
+    orders |o--o{ payments : "order_id"
+    orders ||--o{ order_item : "order_id"
+    products ||--o{ order_item : "product_id"
+    student ||--o{ bookings : "student_id"
+    student ||--o{ email_verification_token : "student_id"
+    student ||--o{ notifications : "student_id"
+    student ||--o{ orders : "student_id"
+    student ||--o{ password_reset_token : "student_id"
+    student ||--o{ reviews : "student_id"
+    time_slots ||--o{ bookings : "time_slot_id"
+    student {
+        bigint student_id PK
+        varchar first_name
+        varchar last_name
+        varchar email UK
+        varchar phone_number
+        varchar password
+        datetime created_at
+        bit email_verified
+        datetime email_verified_at
+        varchar role
+        tinyint disabled
+    }
+    laundry_rooms {
+        bigint room_id PK
+        varchar room_number
+        varchar location
+        int capacity
+        varchar description
+        bit is_active
+    }
+    laundry_machine {
+        bigint machine_id PK
+        varchar machine_number UK
+        varchar type
+        varchar status
+        bigint room_id FK
+    }
+    time_slots {
+        bigint time_slot_id PK
+        date date
+        time start_time
+        time end_time
+        bit is_available
+    }
+    laundry_services {
+        bigint service_id PK
+        varchar service_name
+        varchar description
+        decimal price
+    }
+    bookings {
+        bigint booking_id PK
+        datetime booking_date
+        varchar status
+        decimal total_amount
+        bigint student_id FK
+        bigint machine_id FK
+        bigint time_slot_id FK
+        bigint service_id FK
+    }
+    products {
+        bigint product_id PK
+        varchar name
+        varchar description
+        decimal price
+        varchar category
+        int inventory_quantity
+        varchar image_url
+        tinyint active
+    }
+    orders {
+        bigint order_id PK
+        datetime order_date
+        decimal total_amount
+        varchar status
+        bigint student_id FK
+    }
+    order_item {
+        bigint order_item_id PK
+        bigint order_id FK
+        bigint product_id FK
+        int quantity
+        decimal unit_price
+        decimal subtotal
+    }
+    payments {
+        bigint payment_id PK
+        decimal amount
+        datetime payment_date
+        varchar payment_method
+        varchar status
+        varchar transaction_ref
+        bigint booking_id FK
+        bigint order_id FK
+        varchar payer_name
+        varchar payer_bank
+        bigint service_id FK
+    }
+    reviews {
+        bigint id PK
+        bigint student_id FK
+        bigint service_id FK
+        int rating
+        varchar comment
+        datetime date
+    }
+    notifications {
+        bigint notification_id PK
+        bigint student_id FK
+        varchar message
+        varchar type
+        datetime date_sent
+        bit is_read
+    }
+    email_verification_token {
+        bigint id PK
+        varchar token_hash UK
+        bigint student_id FK
+        datetime created_at
+        datetime expires_at
+        datetime used_at
+    }
+    password_reset_token {
+        bigint id PK
+        varchar token_hash UK
+        bigint student_id FK
+        datetime created_at
+        datetime expires_at
+    }
